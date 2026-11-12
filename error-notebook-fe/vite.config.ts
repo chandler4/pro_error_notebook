@@ -23,5 +23,7 @@ export default defineConfig({
     },
     include: ['src/**/*.{spec,test}.ts'],
     setupFiles: ['vitest.setup.ts'],
+    // 懒加载路由组件首次 transform（katex/dompurify 等依赖链）在慢机可超 5s 默认值
+    testTimeout: 20_000,
   },
 })
