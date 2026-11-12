@@ -13,6 +13,19 @@ export default defineConfig({
   },
   test: {
     environment: 'jsdom',
+    // resources usable：jsdom 默认 NoOpResourceLoader 会让 Image 的 dataURL 加载
+    // 既不触发 load 也不触发 error（Promise 永久悬挂）；启用真 loader 后 data: URL
+    // 由 node-canvas 解码并派发 load 事件（image.ts 压缩链路依赖此行为）
+    environmentOptions: {
+      jsdom: {
+        // usable：Image 的 data: URL 经 node-canvas 解码并派发 load（image 压缩链路依赖）。
+        // 外部资源（blob:/http:）在 vitest.setup.ts 中过滤，避免真实网络请求。
+        resources: 'usable',
+      },
+    },
     include: ['src/**/*.{spec,test}.ts'],
+    setupFiles: ['vitest.setup.ts'],
+    // 懒加载路由组件首次 transform（katex/dompurify 等依赖链）在慢机可超 5s 默认值
+    testTimeout: 20_000,
   },
 })
