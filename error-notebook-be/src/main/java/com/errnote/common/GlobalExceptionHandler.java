@@ -27,6 +27,13 @@ public class GlobalExceptionHandler {
     return ApiResponse.error(ErrorCode.PARAM_INVALID.getCode(), detail);
   }
 
+  /** 请求体不可读（JSON 格式/日期非法等）：40000，不暴露底层解析细节。 */
+  @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
+  public ApiResponse<Void> handleUnreadable(
+      org.springframework.http.converter.HttpMessageNotReadableException e) {
+    return ApiResponse.error(ErrorCode.PARAM_INVALID.getCode(), "请求体不可读或字段格式错误");
+  }
+
   /** 未预期异常：50000 通用文案；堆栈只进系统运行日志（logback），不外泄。 */
   @ExceptionHandler(Exception.class)
   public ApiResponse<Void> handleUnexpected(Exception e) {
