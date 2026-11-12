@@ -1,12 +1,14 @@
 -- 错题整理应用建表脚本（幂等：CREATE TABLE IF NOT EXISTS；architecture-data.md §2.2 唯一基线）
 -- B-1 落地（2026-11-12）：wrong_question / knowledge_point / business_log 三表 + 索引
+-- B-7 修订（2026-11-12）：id CHAR(36) → VARCHAR(36)（H2 CHAR 定长补空格，接口返回污染）；
+--   subject/question_stem 放开 NOT NULL（3.8 空草稿无科目/题干，confirm 时校验必填）
 -- 变更规约：表结构变更 = 修改本文件 + 文件头注记（日期/变更人/内容）；存量迁移一次性脚本归档 db-changelog.md
 
 CREATE TABLE IF NOT EXISTS wrong_question (
-  error_question_id   CHAR(36)     NOT NULL,
-  subject             VARCHAR(20)  NOT NULL,
+  error_question_id   VARCHAR(36)  NOT NULL,
+  subject             VARCHAR(20),
   grade_level         VARCHAR(20),
-  question_stem       TEXT         NOT NULL,
+  question_stem       TEXT,
   question_images     TEXT         NOT NULL,   -- JSON: [{"url":"images/202611/xxx.jpg","role":"QUESTION"}]
   question_type       VARCHAR(20),
   source_name         VARCHAR(255),

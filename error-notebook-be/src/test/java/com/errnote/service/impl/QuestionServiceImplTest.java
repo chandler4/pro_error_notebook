@@ -4,9 +4,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.errnote.common.BusinessException;
 import com.errnote.dto.ImageRef;
 import com.errnote.dto.QuestionSaveRequest;
@@ -24,6 +26,7 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -44,6 +47,7 @@ class QuestionServiceImplTest {
             wrongQuestionMapper,
             knowledgeService,
             fileStorageService,
+            () -> "fixed-uuid",
             Clock.fixed(Instant.parse("2026-11-12T08:00:00Z"), ZoneOffset.UTC));
   }
 
@@ -179,5 +183,56 @@ class QuestionServiceImplTest {
         .extracting("code")
         .isEqualTo(40400);
     verify(wrongQuestionMapper, never()).deleteById(any(String.class));
+  }
+
+  // TC-P-07（域层）：空草稿入库 PENDING_CONFIRM + JSON 列空数组形态（零 AI——本类无 AI 依赖）
+  @Test
+  void createEmptyDraftPersistsPendingDraftWithEmptyCollections() {
+    WrongQuestion draft = service.createEmptyDraft();
+
+    assertThat(draft.getStatus()).isEqualTo("PENDING_CONFIRM");
+    assertThat(draft.getErrorQuestionId()).isEqualTo("fixed-uuid");
+    assertThat(draft.getQuestionImages()).isEqualTo("[]");
+    assertThat(draft.getTags()).isEqualTo("[]");
+    verify(wrongQuestionMapper).insert(draft);
+  }
+
+  // TC-L-04（域层）：page/size 收敛（page≥1、size≤50、缺省 1/10）
+  @Test
+  @SuppressWarnings("unchecked")
+  void listNormalizesPagingBounds() {
+    when(wrongQuestionMapper.selectPage(any(Page.class), any()))
+        .thenReturn(new Page<WrongQuestion>(1, 50));
+
+    service.list(query(0, 999));
+    service.list(query(null, null));
+
+    ArgumentCaptor<Page<WrongQuestion>> captor = ArgumentCaptor.forClass(Page.class);
+    verify(wrongQuestionMapper, times(2)).selectPage(captor.capture(), any());
+    assertThat(captor.getAllValues().get(0).getCurrent()).isEqualTo(1);
+    assertThat(captor.getAllValues().get(0).getSize()).isEqualTo(50);
+    assertThat(captor.getAllValues().get(1).getCurrent()).isEqualTo(1);
+    assertThat(captor.getAllValues().get(1).getSize()).isEqualTo(10);
+  }
+
+  // 3.8：草稿删除仅限 PENDING_CONFIRM；CONFIRMED 经草稿端点删除 → 40400
+  @Test
+  void deleteDraftRejectsConfirmedQuestion() {
+    WrongQuestion confirmed = pendingWithImages();
+    confirmed.setStatus(WrongQuestion.STATUS_CONFIRMED);
+    when(wrongQuestionMapper.selectById("id-1")).thenReturn(confirmed);
+
+    assertThatThrownBy(() -> service.deleteDraft("id-1"))
+        .isInstanceOf(BusinessException.class)
+        .extracting("code")
+        .isEqualTo(40400);
+    verify(wrongQuestionMapper, never()).deleteById(any(String.class));
+  }
+
+  private static com.errnote.dto.QuestionQuery query(Integer page, Integer size) {
+    com.errnote.dto.QuestionQuery q = new com.errnote.dto.QuestionQuery();
+    q.setPage(page);
+    q.setSize(size);
+    return q;
   }
 }

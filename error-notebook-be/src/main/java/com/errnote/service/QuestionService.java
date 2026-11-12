@@ -1,9 +1,12 @@
 package com.errnote.service;
 
+import com.errnote.dto.PageResult;
+import com.errnote.dto.QuestionDetail;
+import com.errnote.dto.QuestionQuery;
 import com.errnote.dto.QuestionSaveRequest;
 import com.errnote.entity.WrongQuestion;
 
-/** 错题详情/确认/编辑/删除（api-contract 3.3~3.7）。 */
+/** 错题详情/确认/编辑/删除/列表/草稿管理（api-contract 3.3~3.8）。 */
 public interface QuestionService {
 
   /** 详情（错题/草稿共用，3.4）；不存在抛 40400。 */
@@ -17,4 +20,16 @@ public interface QuestionService {
 
   /** 硬删除（3.7）：删记录 + 联动删图（BR-04）+ 知识点减计；不存在抛 40400。 */
   void delete(String id);
+
+  /** 分页筛选（3.5）：仅 CONFIRMED；错题日期倒序、同日创建倒序；size 上限 50。 */
+  PageResult<QuestionDetail> list(QuestionQuery query);
+
+  /** 创建空草稿（3.8 / FR-A4 转手动填写）：零 AI 调用（TC-P-07），PENDING_CONFIRM。 */
+  WrongQuestion createEmptyDraft();
+
+  /** 草稿列表（3.8）：仅 PENDING_CONFIRM，创建倒序。 */
+  PageResult<QuestionDetail> listDrafts(int page, int size);
+
+  /** 手动删除草稿（3.8）：不删图片；非草稿或不存在抛 40400。 */
+  void deleteDraft(String id);
 }
