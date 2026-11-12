@@ -159,7 +159,7 @@
             <exclude>com/errnote/config/**</exclude>
           </excludes>
           <rules>
-            <!-- test-strategy §6：总行覆盖 ≥70%（核心包 ≥85% 随 B/A workstream 任务补入）；CLI/execution 均生效 -->
+            <!-- test-strategy §6：总行覆盖 ≥70%；核心业务包 service.impl ≥85%（随 B-4 启用）；CLI/execution 均生效 -->
             <rule>
               <element>BUNDLE</element>
               <limits>
@@ -167,6 +167,17 @@
                   <counter>LINE</counter>
                   <value>COVEREDRATIO</value>
                   <minimum>0.70</minimum>
+                </limit>
+              </limits>
+            </rule>
+            <rule>
+              <element>PACKAGE</element>
+              <includes>com.errnote.service.impl</includes>
+              <limits>
+                <limit>
+                  <counter>LINE</counter>
+                  <value>COVEREDRATIO</value>
+                  <minimum>0.85</minimum>
                 </limit>
               </limits>
             </rule>

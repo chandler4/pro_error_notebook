@@ -31,6 +31,14 @@ app:
   ai:
     base-url: ${ERRNOTE_BE_AI_BASE_URL:http://127.0.0.1:8081}
 
+# Feign 超时（架构 §5.7：连接 5s / 读取 90s，模型长响应；前端超时 120s > 90s 兜底）
+feign:
+  client:
+    config:
+      default:
+        connect-timeout: 5000
+        read-timeout: 90000
+
 # 图片/数据目录（相对运行目录；备份单元=data/ 整体拷贝）
 data:
   dir: ./data
