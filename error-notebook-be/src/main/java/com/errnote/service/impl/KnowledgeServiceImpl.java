@@ -65,6 +65,13 @@ public class KnowledgeServiceImpl implements KnowledgeService {
 
   @Override
   public List<String> candidates(String keyword, int limit) {
+    return candidateEntities(keyword, limit).stream()
+        .map(KnowledgePoint::getName)
+        .collect(Collectors.toList());
+  }
+
+  @Override
+  public List<KnowledgePoint> candidateEntities(String keyword, int limit) {
     LambdaQueryWrapper<KnowledgePoint> wrapper = new LambdaQueryWrapper<>();
     if (keyword != null && !keyword.trim().isEmpty()) {
       wrapper.like(KnowledgePoint::getName, keyword.trim()); // 包含匹配
@@ -72,7 +79,7 @@ public class KnowledgeServiceImpl implements KnowledgeService {
     wrapper.orderByDesc(KnowledgePoint::getUseCount); // 热度降序（TC-C-04）
     int safeLimit = Math.max(1, Math.min(limit, 50));
     Page<KnowledgePoint> page = mapper.selectPage(new Page<>(1, safeLimit), wrapper);
-    return page.getRecords().stream().map(KnowledgePoint::getName).collect(Collectors.toList());
+    return page.getRecords();
   }
 
   private LambdaQueryWrapper<KnowledgePoint> nameEquals(String name) {
