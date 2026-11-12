@@ -26,7 +26,7 @@ import org.springframework.stereotype.Service;
  */
 @Slf4j
 @Service
-public class LocalFileStorageService implements FileStorageService {
+public final class LocalFileStorageService implements FileStorageService {
 
   static final long MAX_BYTES = 10L * 1024 * 1024;
   private static final DateTimeFormatter MONTH_DIR = DateTimeFormatter.ofPattern("yyyyMM");
@@ -53,8 +53,13 @@ public class LocalFileStorageService implements FileStorageService {
     String month = MONTH_DIR.format(LocalDate.now(clock));
     String relativePath = "images/" + month + "/" + idGenerator.newId() + extension;
     Path target = resolveSafely(relativePath);
+    Path parent = target.getParent();
+    if (parent == null) {
+      // unreachable：relativePath 恒含两层目录；防御式兜底（SpotBugs NP）
+      throw new BusinessException(ErrorCode.INTERNAL_ERROR, "图片保存失败");
+    }
     try {
-      Files.createDirectories(target.getParent());
+      Files.createDirectories(parent);
       Files.copy(pushback, target, StandardCopyOption.REPLACE_EXISTING);
       if (Files.size(target) > MAX_BYTES) { // TC-U-06：大小上限（魔数已读后流式落盘再校验）
         Files.deleteIfExists(target);
