@@ -141,7 +141,7 @@
             <exclude>com/errnote/ai/config/**</exclude>
           </excludes>
           <rules>
-            <!-- test-strategy §6：总行覆盖 ≥70%（核心包 acl/client ≥85% 随 A workstream 任务补入）；CLI/execution 均生效 -->
+            <!-- test-strategy §6：总行 ≥70%；核心包（防腐层/模型客户端）≥85%；CLI/execution 均生效 -->
             <rule>
               <element>BUNDLE</element>
               <limits>
@@ -149,6 +149,17 @@
                   <counter>LINE</counter>
                   <value>COVEREDRATIO</value>
                   <minimum>0.70</minimum>
+                </limit>
+              </limits>
+            </rule>
+            <rule>
+              <element>PACKAGE</element>
+              <includes>com.errnote.ai.acl.*,com.errnote.ai.client.*</includes>
+              <limits>
+                <limit>
+                  <counter>LINE</counter>
+                  <value>COVEREDRATIO</value>
+                  <minimum>0.85</minimum>
                 </limit>
               </limits>
             </rule>
