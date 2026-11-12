@@ -15,6 +15,7 @@ import { getEnums } from '../api/meta'
 import { useListStore } from '../store/list'
 import type { WrongQuestion } from '../types'
 import QuestionDetailDrawer from '../components/QuestionDetailDrawer.vue'
+import ExportDialog from '../components/ExportDialog.vue'
 
 const router = useRouter()
 const listStore = useListStore()
@@ -40,9 +41,10 @@ const draftRows = ref<WrongQuestion[]>([])
 const draftTotal = ref(0)
 const draftPage = ref(1)
 
-// ---- 详情抽屉 ----
+// ---- 详情抽屉 / 导出弹窗 ----
 const drawerVisible = ref(false)
 const detail = ref<WrongQuestion | null>(null)
+const exportVisible = ref(false)
 
 async function load(): Promise<void> {
   loading.value = true
@@ -165,9 +167,9 @@ async function onDeleteDraft(row: WrongQuestion): Promise<void> {
   }
 }
 
-/** 导出弹窗在 F-5（备份/导出模块）接入，当前给出占位提示。 */
+/** 导出弹窗（prototype-spec §2.6）：携带当前筛选（listStore 共享）。 */
 function onExport(): void {
-  ElMessage.info('导出弹窗将随备份模块（F-5）提供')
+  exportVisible.value = true
 }
 
 onMounted(async () => {
@@ -299,6 +301,7 @@ onMounted(async () => {
     </template>
 
     <QuestionDetailDrawer v-model="drawerVisible" :question="detail" />
+    <ExportDialog v-model="exportVisible" />
   </div>
 </template>
 

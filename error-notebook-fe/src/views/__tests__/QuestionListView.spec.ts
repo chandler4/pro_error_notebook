@@ -4,6 +4,7 @@ import { createPinia } from 'pinia'
 import ElementPlus, { ElMessageBox, ElPagination } from 'element-plus'
 import QuestionListView from '../QuestionListView.vue'
 import QuestionDetailDrawer from '../../components/QuestionDetailDrawer.vue'
+import ExportDialog from '../../components/ExportDialog.vue'
 import router from '../../router'
 import { listQuestions, listDrafts, deleteQuestion, deleteDraft, getQuestion } from '../../api/question'
 import { getEnums } from '../../api/meta'
@@ -15,6 +16,9 @@ vi.mock('../../api/question', () => ({
   deleteQuestion: vi.fn(),
   deleteDraft: vi.fn(),
   getQuestion: vi.fn(),
+  exportQuestions: vi.fn(),
+  backupExport: vi.fn(),
+  backupImport: vi.fn(),
 }))
 vi.mock('../../api/meta', () => ({
   getEnums: vi.fn(),
@@ -182,6 +186,18 @@ describe('QuestionListView 详情抽屉', () => {
     const drawer = wrapper.findComponent(QuestionDetailDrawer)
     expect(drawer.props('modelValue')).toBe(true)
     expect(wrapper.text()).toContain('已知函数 f(x)=x^2，求导（q1）')
+    wrapper.unmount()
+  })
+})
+
+/** 工具栏导出打开导出弹窗（prototype-spec §2.6）。 */
+describe('QuestionListView 导出入口', () => {
+  it('点击导出打开 ExportDialog', async () => {
+    const wrapper = mountView()
+    await flushPromises()
+    await wrapper.findAll('button').find((b) => b.text() === '导出')!.trigger('click')
+    await flushPromises()
+    expect(wrapper.findComponent(ExportDialog).props('modelValue')).toBe(true)
     wrapper.unmount()
   })
 })
