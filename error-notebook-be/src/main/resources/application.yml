@@ -1,0 +1,49 @@
+# 错题整理应用 · 后端配置（架构 §5.7；敏感项仅环境变量注入，security.md §5）
+server:
+  port: 8080
+  address: 127.0.0.1
+
+spring:
+  application:
+    name: error-notebook-be
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:file:./data/errnote
+    username: sa
+    password: ''
+  sql:
+    init:
+      mode: always # schema.sql 幂等建表（architecture-data.md §4）
+      schema-locations: classpath:schema.sql
+  servlet:
+    multipart:
+      max-file-size: 10MB # 单张上限（41002）
+      max-request-size: 70MB # 6 张 + 余量（41003）
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    banner: false
+
+# AI 服务内部契约地址（api-contract 第 7 章；仅回环）
+app:
+  ai:
+    base-url: ${ERRNOTE_BE_AI_BASE_URL:http://127.0.0.1:8081}
+
+# 图片/数据目录（相对运行目录；备份单元=data/ 整体拷贝）
+data:
+  dir: ./data
+
+# 枚举字典（architecture-data.md §3：改配置重启生效，无需发版）
+enums:
+  subjects: [chinese, math, english, physics, chemistry, biology, politics, history, geography, other]
+  grade-levels: [grade1, grade2, grade3, grade4, grade5, grade6, grade7, grade8, grade9, grade10, grade11, grade12]
+  question-types: [choice, multiChoice, fillBlank, judge, calculation, experiment, essay, application, other]
+  subject-tabs: [math, physics, chemistry] # 前端分科 Tab（规约场景；科目全集见 subjects）
+
+springdoc:
+  api-docs:
+    enabled: true # 生产外置配置默认关闭（security.md §2）
+  swagger-ui:
+    enabled: true

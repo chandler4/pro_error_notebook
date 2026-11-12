@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>错题本原型 · 运行日志</title>
+<style>
+  :root{--primary:#409EFF;--bg:#f5f7fa;--text:#303133;--text2:#606266;--muted:#909399;--border:#e4e7ed;--danger:#f56c6c;--success:#67c23a;--warn:#e6a23c}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Helvetica Neue",Helvetica,"PingFang SC","Microsoft YaHei",Arial,sans-serif;color:var(--text);background:var(--bg)}
+  .layout{display:flex;min-height:100vh}
+  aside{width:200px;background:#fff;border-right:1px solid var(--border);flex-shrink:0}
+  .logo{height:56px;line-height:56px;text-align:center;font-weight:600;color:var(--primary);border-bottom:1px solid var(--border)}
+  .menu-item{display:block;padding:13px 20px;color:var(--text2);cursor:pointer;font-size:14px;position:relative;text-decoration:none}
+  .menu-item:hover{background:#f5f7fa}
+  .menu-item.active{color:var(--primary);background:#ecf5ff;font-weight:600}
+  .menu-item.active::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--primary)}
+  main{flex:1;padding:16px 20px;min-width:0}
+  .page-title{font-size:18px;margin:0 0 16px}
+  .card{background:#fff;border-radius:4px;padding:16px;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+  .filter{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+  .inp{height:32px;border:1px solid #dcdfe6;border-radius:4px;padding:0 10px;font-size:13px;outline:none}
+  select.inp{min-width:110px}
+  input.inp{min-width:150px}
+  .inp:focus{border-color:var(--primary)}
+  .btn{height:32px;padding:0 15px;border-radius:4px;border:1px solid #dcdfe6;background:#fff;color:var(--text2);cursor:pointer;font-size:13px}
+  .btn:hover{color:var(--primary);border-color:#c6e2ff;background:#ecf5ff}
+  .btn-primary{background:var(--primary);border-color:var(--primary);color:#fff}
+  .tbl{width:100%;border-collapse:collapse}
+  .tbl th{background:#fafafa;color:var(--muted);font-weight:500;text-align:left;padding:10px 12px;font-size:13px;border-bottom:1px solid var(--border)}
+  .tbl td{padding:10px 12px;border-bottom:1px solid #ebeef5;font-size:13px;color:var(--text2)}
+  .badge{display:inline-block;padding:1px 8px;font-size:12px;border-radius:3px}
+  .badge.op{background:#ecf5ff;color:var(--primary);border:1px solid #d9ecff}
+  .badge.ai{background:#fdf6ec;color:var(--warn);border:1px solid #faecd8}
+  .st{font-size:13px}
+  .st.ok{color:var(--success)}
+  .st.fail{color:var(--danger)}
+  .link{color:var(--primary);cursor:pointer;background:none;border:none;font-size:13px;padding:0 4px}
+  .code{font-family:Consolas,Menlo,monospace}
+  .pager{display:flex;justify-content:space-between;align-items:center;margin-top:14px;font-size:13px;color:var(--muted)}
+  .pages{display:flex;gap:6px}
+  .pg{min-width:30px;height:30px;border:1px solid #dcdfe6;background:#fff;border-radius:4px;cursor:pointer;color:var(--text2);font-size:13px}
+  .pg.active{background:var(--primary);border-color:var(--primary);color:#fff}
+  .pg:disabled{color:#c0c4cc;cursor:not-allowed}
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;z-index:10}
+  .overlay.show{display:block}
+  .drawer{position:fixed;top:0;right:-560px;width:540px;height:100vh;background:#fff;z-index:11;transition:right .25s;overflow-y:auto;padding:20px;box-shadow:-2px 0 8px rgba(0,0,0,.1)}
+  .drawer.show{right:0}
+  .drawer h3{margin:0 0 4px;font-size:16px}
+  .sec{margin-top:16px}
+  .sec .label{font-size:13px;color:var(--muted);margin-bottom:6px}
+  pre.payload{background:#0d1117;color:#c9d1d9;font-family:Consolas,Menlo,monospace;font-size:12px;line-height:1.7;border-radius:6px;padding:12px;overflow:auto;white-space:pre-wrap;word-break:break-all;max-height:260px;margin:0}
+  .meta{font-size:12px;color:var(--muted);line-height:1.9}
+  .proto-note{margin-top:12px;font-size:12px;color:#c0c4cc;text-align:center}
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside>
+    <div class="logo">📓 错题本</div>
+    <a class="menu-item" href="list.html">错题记录</a>
+    <a class="menu-item active">运行日志</a>
+    <a class="menu-item" href="backup.html">数据备份</a>
+  </aside>
+  <main>
+    <h1 class="page-title">运行日志</h1>
+    <div class="card">
+      <div class="filter">
+        <select class="inp" id="f_type">
+          <option value="">全部类型</option><option value="AI_CALL">AI 调用</option><option value="OPERATION">业务操作</option>
+        </select>
+        <input class="inp" id="f_module" placeholder="模块模糊，如：Parse"/>
+        <select class="inp" id="f_success">
+          <option value="">全部状态</option><option value="true">成功</option><option value="false">失败</option>
+        </select>
+        <input type="date" class="inp" id="f_from"/> <span style="color:#c0c4cc">~</span> <input type="date" class="inp" id="f_to"/>
+        <button class="btn btn-primary" onclick="doQuery()">查询</button>
+        <button class="btn" onclick="doReset()">重置</button>
+      </div>
+      <table class="tbl">
+        <thead><tr>
+          <th>类型</th><th>模块</th><th>操作描述</th><th>状态</th><th>错误码</th><th>耗时</th><th>时间</th><th>操作</th>
+        </tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+      <div class="pager"><span id="total"></span><div class="pages" id="pages"></div></div>
+      <div class="proto-note">原型 v2（按 prototype-spec P3 / FR-C3）：业务操作与 AI 调用质量查看记录 ｜ 本页查询自身不产生业务日志（防递归）</div>
+    </div>
+  </main>
+</div>
+
+<div class="overlay" id="overlay" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer">
+  <h3 id="dTitle">日志详情</h3>
+  <div class="meta" id="dMeta"></div>
+  <div class="sec"><div class="label">请求内容</div><pre class="payload" id="dReq"></pre></div>
+  <div class="sec"><div class="label">返回内容（AI 返回 / 业务返回 · 全文）</div><pre class="payload" id="dResp"></pre></div>
+</div>
+
+<script>
+const LOGS=[
+{id:12,traceId:'a1f3…9c02',logType:'AI_CALL',module:'OpenAiVisionAdapter#parse',action:'AI 解析 model=glm-4v',success:true,errorCode:0,duration:18342,created:'2026-11-11 16:20:05',
+ req:'{"images":[{"url":"images/202611/a1b2.jpg","role":"QUESTION"},{"url":"images/202611/c3d4.jpg","role":"ANSWER_SHEET"}],"prompt":"<system>仅输出严格JSON…</system>"}',
+ resp:'{"choices":[{"message":{"content":"{\\"subject\\":\\"physics\\",\\"questionStem\\":\\"在探究“串联电路电压规律”的实验中…\\",\\"standardAnswer\\":[\\"12\\",\\"1:5\\"],\\"knowledgePoints\\":[\\"电压表读数\\",\\"串联电路分压规律\\"],\\"knowledgeAnalysis\\":\\"**步骤1** 偏转角相同时…\\"}"}}],"usage":{"total_tokens":2841}}'},
+{id:11,traceId:'b7e2…41aa',logType:'OPERATION',module:'QuestionController#confirm',action:'',success:true,errorCode:0,duration:38,created:'2026-11-11 16:20:06',
+ req:'{"errorQuestionId":"3f8a2c1e-…","subject":"physics","questionStem":"在探究…","standardAnswer":["12","1:5"]}',
+ resp:'{"errorQuestionId":"3f8a2c1e-…","status":"CONFIRMED","knowledgePoints":["电压表读数","串联电路分压规律"]}'},
+{id:10,traceId:'c9d1…77bc',logType:'OPERATION',module:'QuestionController#parse',action:'',success:true,errorCode:0,duration:18411,created:'2026-11-11 16:20:05',
+ req:'{"images":[{"url":"images/202611/a1b2.jpg","role":"QUESTION"}]}',
+ resp:'{"errorQuestionId":"3f8a2c1e-…","status":"PENDING_CONFIRM","questionStem":"在探究…"}'},
+{id:9,traceId:'d2a4…10ef',logType:'AI_CALL',module:'OpenAiVisionAdapter#parse',action:'AI 解析 model=glm-4v',success:false,errorCode:42001,duration:90012,created:'2026-11-11 16:18:12',
+ req:'{"images":[{"url":"images/202611/e5f6.jpg","role":"QUESTION"}]}',
+ resp:'RetryableException: Read timed out（已重试 1 次仍失败）'},
+{id:8,traceId:'e8b3…52cd',logType:'OPERATION',module:'QuestionController#page',action:'',success:true,errorCode:0,duration:25,created:'2026-11-11 16:15:40',
+ req:'{"subject":"physics","page":1,"size":10}',
+ resp:'{"total":6,"list":["…10 条摘要…"]}'},
+{id:7,traceId:'f0c2…88de',logType:'OPERATION',module:'ExportController#export',action:'',success:true,errorCode:0,duration:412,created:'2026-11-11 16:12:31',
+ req:'{"format":"pdf","rework":true,"subject":"physics"}',
+ resp:'<binary: 错题本-重做模式.pdf · 384,210 bytes>'},
+{id:6,traceId:'a5d9…31fg',logType:'OPERATION',module:'BackupController#import',action:'',success:false,errorCode:43002,duration:655,created:'2026-11-11 16:05:02',
+ req:'{"mode":"skip","file":"errnote-backup.json(45条)"}',
+ resp:'{"total":45,"inserted":40,"skipped":3,"errors":[{"line":17,"reason":"standardAnswer 缺失"},{"line":42,"reason":"subject 枚举值非法: phys"}]}'},
+{id:5,traceId:'b1e7…66hi',logType:'OPERATION',module:'FileController#parse-image',action:'',success:false,errorCode:41001,duration:8,created:'2026-11-11 16:01:47',
+ req:'multipart: [notes.txt (伪装 .jpg)]',
+ resp:'图片格式不支持（魔数校验失败）'}
+];
+
+let state={type:'',module:'',success:'',from:'',to:'',page:1,size:6};
+
+function filtered(){
+  return LOGS.filter(l=>
+    (!state.type||l.logType===state.type)&&
+    (!state.module||l.module.toLowerCase().includes(state.module.toLowerCase()))&&
+    (state.success===''||String(l.success)===state.success)&&
+    (!state.from||l.created.slice(0,10)>=state.from)&&
+    (!state.to||l.created.slice(0,10)<=state.to));
+}
+function render(){
+  const rows=filtered(),total=rows.length,pages=Math.max(1,Math.ceil(total/state.size));
+  if(state.page>pages)state.page=pages;
+  const list=rows.slice((state.page-1)*state.size,state.page*state.size);
+  document.getElementById('tbody').innerHTML=list.length?list.map(l=>`
+    <tr>
+      <td><span class="badge ${l.logType==='AI_CALL'?'ai':'op'}">${l.logType==='AI_CALL'?'AI 调用':'业务操作'}</span></td>
+      <td class="code">${l.module}</td>
+      <td>${l.action||'—'}</td>
+      <td class="st ${l.success?'ok':'fail'}">${l.success?'✓ 成功':'✗ 失败'}</td>
+      <td class="code">${l.errorCode||'—'}</td>
+      <td>${l.duration>=1000?(l.duration/1000).toFixed(1)+' s':l.duration+' ms'}</td>
+      <td>${l.created}</td>
+      <td><button class="link" onclick="view(${l.id})">查看</button></td>
+    </tr>`).join('')
+    :`<tr><td colspan="8" style="text-align:center;color:#909399;padding:36px 0">暂无日志</td></tr>`;
+  document.getElementById('total').textContent=`共 ${total} 条`;
+  let html=`<button class="pg" ${state.page===1?'disabled':''} onclick="go(${state.page-1})">‹</button>`;
+  for(let i=1;i<=pages;i++)html+=`<button class="pg ${state.page===i?'active':''}" onclick="go(${i})">${i}</button>`;
+  html+=`<button class="pg" ${state.page===pages?'disabled':''} onclick="go(${state.page+1})">›</button>`;
+  document.getElementById('pages').innerHTML=html;
+}
+function go(p){state.page=p;render();}
+function doQuery(){
+  state.type=document.getElementById('f_type').value;
+  state.module=document.getElementById('f_module').value.trim();
+  state.success=document.getElementById('f_success').value;
+  state.from=document.getElementById('f_from').value;
+  state.to=document.getElementById('f_to').value;
+  state.page=1;render();
+}
+function doReset(){['f_type','f_module','f_success','f_from','f_to'].forEach(id=>document.getElementById(id).value='');doQuery();}
+function view(id){
+  const l=LOGS.find(x=>x.id===id);if(!l)return;
+  document.getElementById('dTitle').innerHTML=`${l.logType==='AI_CALL'?'AI 调用':'业务操作'} · <span class="code" style="font-size:13px">${l.module}</span>`;
+  document.getElementById('dMeta').innerHTML=`traceId: ${l.traceId} ｜ ${l.action||'—'} ｜ ${l.success?'成功':'失败'}（${l.errorCode||0}）｜ 耗时 ${l.duration} ms ｜ ${l.created}`;
+  document.getElementById('dReq').textContent=l.req;
+  document.getElementById('dResp').textContent=l.resp;
+  document.getElementById('overlay').classList.add('show');
+  document.getElementById('drawer').classList.add('show');
+}
+function closeDrawer(){document.getElementById('overlay').classList.remove('show');document.getElementById('drawer').classList.remove('show');}
+render();
+</script>
+</body>
+</html>

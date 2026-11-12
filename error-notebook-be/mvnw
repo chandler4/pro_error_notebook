@@ -1,0 +1,35 @@
+#!/bin/sh
+# Maven Wrapper（精简实现：兼容 maven-wrapper 3.3.x 行为）
+# 用法：./mvnw <goals>  —— 首次运行自动下载 wrapper jar 与 Maven 发行版
+set -e
+
+MAVEN_PROJECTBASEDIR=$(cd "$(dirname "$0")" && pwd)
+WRAPPER_JAR="$MAVEN_PROJECTBASEDIR/.mvn/wrapper/maven-wrapper.jar"
+WRAPPER_PROPERTIES="$MAVEN_PROJECTBASEDIR/.mvn/wrapper/maven-wrapper.properties"
+
+# jar 缺失则按 wrapperUrl 下载
+if [ ! -f "$WRAPPER_JAR" ]; then
+  wrapper_url=$(sed -n 's/^wrapperUrl=//p' "$WRAPPER_PROPERTIES" | tr -d '\r')
+  if [ -z "$wrapper_url" ]; then
+    echo "ERROR: wrapperUrl not defined in maven-wrapper.properties" >&2
+    exit 1
+  fi
+  echo "Downloading Maven Wrapper jar from $wrapper_url ..."
+  if command -v curl >/dev/null 2>&1; then
+    curl -fsSL -o "$WRAPPER_JAR" "$wrapper_url"
+  elif command -v wget >/dev/null 2>&1; then
+    wget -q -O "$WRAPPER_JAR" "$wrapper_url"
+  else
+    echo "ERROR: need curl or wget to download $wrapper_url" >&2
+    exit 1
+  fi
+fi
+
+# JVM 选择：优先 JAVA_HOME（本项目基线 JDK 8——g-j-f 1.7 需老 JDK，勿用 JDK 17+），否则 PATH
+if [ -n "$JAVA_HOME" ] && [ -x "$JAVA_HOME/bin/java" ]; then
+  JAVACMD="$JAVA_HOME/bin/java"
+else
+  JAVACMD="java"
+fi
+
+exec "$JAVACMD" -Dmaven.multiModuleProjectDirectory="$MAVEN_PROJECTBASEDIR" -cp "$WRAPPER_JAR" org.apache.maven.wrapper.MavenWrapperMain "$@"

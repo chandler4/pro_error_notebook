@@ -1,0 +1,23 @@
+# 质量门禁（架构 §6.2：仅 commit 钩子，全量检查）——按暂存内容触发对应工程
+# 约定：--no-verify 仅限 WIP 提交，正式合入前必须完整通过一次（2026-11-11 14:57 决策）
+set -e
+
+# 项目 JDK 基线 = 8（google-java-format 1.7 不兼容 JDK 17+）；本机 JDK 8 路径，换机时改此处
+export JAVA_HOME="${ERRNOTE_JDK8_HOME:-/c/Program Files/Java/jdk1.8.0_221}"
+
+staged=$(git diff --cached --name-only)
+
+if printf '%s\n' "$staged" | grep -qE '^error-notebook-be/.*\.(java|xml|sql|yml|yaml|properties)$'; then
+  echo "[pre-commit] BE 质量链：spotless / checkstyle / spotbugs / test / jacoco"
+  (cd error-notebook-be && ./mvnw --batch-mode spotless:check checkstyle:check spotbugs:check test jacoco:check)
+fi
+
+if printf '%s\n' "$staged" | grep -qE '^error-notebook-ai/.*\.(java|xml|yml|yaml|properties)$'; then
+  echo "[pre-commit] AI 质量链：spotless / checkstyle / spotbugs / test / jacoco"
+  (cd error-notebook-ai && ./mvnw --batch-mode spotless:check checkstyle:check spotbugs:check test jacoco:check)
+fi
+
+if printf '%s\n' "$staged" | grep -qE '^error-notebook-fe/.*\.(ts|tsx|vue|json|html|css|scss|js|cjs)$'; then
+  echo "[pre-commit] FE 质量链：lint-staged / vue-tsc / vitest"
+  (cd error-notebook-fe && npx lint-staged && npm run type-check && npm run test)
+fi

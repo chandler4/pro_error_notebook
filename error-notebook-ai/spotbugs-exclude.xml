@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+  <!-- EI_EXPOSE_REP / EI_EXPOSE_REP2（may expose internal representation）全局免检
+       （2026-11-12 质量链装配决策）：Lombok @Data（DTO/实体）与 Spring 构造器注入
+       （controller/service/config）在该规则下均为系统性误报；集合可变性风险由代码评审把关。
+       其余 SpotBugs 规则维持 Medium 阻断。 -->
+  <Match>
+    <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+  </Match>
+</FindBugsFilter>

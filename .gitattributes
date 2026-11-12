@@ -1,0 +1,14 @@
+# 跨平台行尾一致性：shell 脚本必须 LF（CRLF 会破坏 husky/mvnw 执行）
+* text=auto
+*.sh text eol=lf
+mvnw text eol=lf
+mvnw.cmd text eol=crlf
+.husky/* text eol=lf
+*.java text
+*.xml text
+*.yml text
+*.ts text
+*.vue text
+*.png binary
+*.jpg binary
+*.pdf binary

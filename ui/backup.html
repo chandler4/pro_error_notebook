@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>错题本原型 · 数据备份</title>
+<style>
+  :root{--primary:#409EFF;--bg:#f5f7fa;--text:#303133;--text2:#606266;--muted:#909399;--border:#e4e7ed;--danger:#f56c6c;--success:#67c23a;--warn:#e6a23c}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Helvetica Neue",Helvetica,"PingFang SC","Microsoft YaHei",Arial,sans-serif;color:var(--text);background:var(--bg)}
+  .layout{display:flex;min-height:100vh}
+  aside{width:200px;background:#fff;border-right:1px solid var(--border);flex-shrink:0}
+  .logo{height:56px;line-height:56px;text-align:center;font-weight:600;color:var(--primary);border-bottom:1px solid var(--border)}
+  .menu-item{display:block;padding:13px 20px;color:var(--text2);cursor:pointer;font-size:14px;position:relative;text-decoration:none}
+  .menu-item:hover{background:#f5f7fa}
+  .menu-item.active{color:var(--primary);background:#ecf5ff;font-weight:600}
+  .menu-item.active::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--primary)}
+  main{flex:1;padding:16px 20px;min-width:0;max-width:900px}
+  .page-title{font-size:18px;margin:0 0 16px}
+  .card{background:#fff;border-radius:4px;padding:20px;box-shadow:0 1px 2px rgba(0,0,0,.05);margin-bottom:16px}
+  .card h4{margin:0 0 6px;font-size:15px}
+  .card .desc{font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.7}
+  .btn{height:34px;padding:0 18px;border-radius:4px;border:1px solid #dcdfe6;background:#fff;color:var(--text2);cursor:pointer;font-size:13px}
+  .btn:hover{color:var(--primary);border-color:#c6e2ff;background:#ecf5ff}
+  .btn-primary{background:var(--primary);border-color:var(--primary);color:#fff}
+  .btn-primary:hover{background:#66b1ff;color:#fff}
+  .btn[disabled]{opacity:.5;cursor:not-allowed}
+  .upload{border:2px dashed #c0c4cc;border-radius:6px;padding:28px 16px;text-align:center;color:#909399;cursor:pointer;background:#fafafa;transition:.2s}
+  .upload:hover{border-color:var(--primary);color:var(--primary);background:#ecf5ff}
+  .radio-row{display:flex;gap:20px;margin:14px 0;font-size:13px;color:var(--text2)}
+  .stat-row{display:flex;gap:14px;flex-wrap:wrap;margin:6px 0 14px}
+  .stat{flex:1;min-width:110px;background:#f5f7fa;border-radius:6px;padding:12px;text-align:center}
+  .stat .n{font-size:22px;font-weight:600;color:var(--text)}
+  .stat .l{font-size:12px;color:var(--muted);margin-top:2px}
+  .stat.err .n{color:var(--danger)}
+  .stat.ok .n{color:var(--success)}
+  .tbl{width:100%;border-collapse:collapse}
+  .tbl th{background:#fafafa;color:var(--muted);font-weight:500;text-align:left;padding:8px 12px;font-size:13px;border-bottom:1px solid var(--border)}
+  .tbl td{padding:8px 12px;border-bottom:1px solid #ebeef5;font-size:13px;color:var(--text2)}
+  .toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);background:#f0f9eb;border:1px solid #e1f3d8;color:var(--success);padding:8px 18px;border-radius:4px;font-size:13px;display:none;z-index:20}
+  .proto-note{margin-top:12px;font-size:12px;color:#c0c4cc;text-align:center}
+  .file-chip{display:none;margin-top:10px;font-size:13px;color:var(--text2);background:#ecf5ff;border:1px solid #d9ecff;border-radius:4px;padding:6px 12px}
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside>
+    <div class="logo">📓 错题本</div>
+    <a class="menu-item" href="list.html">错题记录</a>
+    <a class="menu-item" href="logs.html">运行日志</a>
+    <a class="menu-item active">数据备份</a>
+  </aside>
+  <main>
+    <h1 class="page-title">数据备份</h1>
+
+    <!-- 导出 -->
+    <div class="card">
+      <h4>全量导出</h4>
+      <div class="desc">导出全部<b>已确认</b>错题（不含草稿）为规约 JSON 数组文件——字段与 spec/notebook.md 数据结构完全一致，可在本系统或其他工具再导入。<br>注意：JSON 不包含图片文件；完整迁移需同时拷贝 data/ 目录。</div>
+      <button class="btn btn-primary" onclick="toast('已开始下载 errnote-backup-20261111.json（128 条，原型演示）')">导出全量 JSON</button>
+    </div>
+
+    <!-- 导入 -->
+    <div class="card">
+      <h4>全量导入</h4>
+      <div class="desc">上传备份 JSON（≤20MB），按 errorQuestionId 幂等处理：</div>
+      <div class="radio-row">
+        <label><input type="radio" name="mode" value="skip" checked> 跳过已存在（skip）——仅新增</label>
+        <label><input type="radio" name="mode" value="overwrite"> 覆盖更新（overwrite）——同 ID 覆盖</label>
+      </div>
+      <div class="upload" id="up" onclick="document.getElementById('file').click()">
+        <div style="font-size:24px;margin-bottom:6px">📄</div>
+        点击选择备份 JSON 文件
+        <div style="font-size:12px;color:#c0c4cc;margin-top:4px">errnote-backup-*.json · ≤20MB</div>
+      </div>
+      <input type="file" id="file" accept=".json,application/json" style="display:none">
+      <div class="file-chip" id="fileChip"></div>
+      <div style="margin-top:14px">
+        <button class="btn btn-primary" id="importBtn" onclick="doImport()" disabled>开始导入</button>
+      </div>
+    </div>
+
+    <!-- 导入结果报告 -->
+    <div class="card" id="report" style="display:none">
+      <h4>导入结果报告</h4>
+      <div class="stat-row">
+        <div class="stat"><div class="n">45</div><div class="l">总计 total</div></div>
+        <div class="stat ok"><div class="n">40</div><div class="l">新增 inserted</div></div>
+        <div class="stat"><div class="n">3</div><div class="l">跳过 skipped</div></div>
+        <div class="stat"><div class="n">0</div><div class="l">覆盖 overwritten</div></div>
+        <div class="stat err"><div class="n">2</div><div class="l">失败 errors</div></div>
+      </div>
+      <table class="tbl">
+        <thead><tr><th style="width:90px">行号</th><th>失败原因</th></tr></thead>
+        <tbody>
+          <tr><td>17</td><td>standardAnswer 缺失（必填字段校验失败，code 43002）</td></tr>
+          <tr><td>42</td><td>subject 枚举值非法：phys（应为 physics 等，code 43002）</td></tr>
+        </tbody>
+      </table>
+      <div style="font-size:12px;color:var(--muted);margin-top:10px">失败行不影响其余数据导入；可修正后重新导入（幂等）。</div>
+    </div>
+
+    <div class="proto-note">原型 v2（按 prototype-spec P4 / FR-B5）：导出 · 导入双模式 · 行级错误报告 ｜ mock 演示</div>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+<script>
+const fileInput=document.getElementById('file');
+fileInput.onchange=()=>{
+  const f=fileInput.files[0];
+  if(!f)return;
+  document.getElementById('fileChip').style.display='inline-block';
+  document.getElementById('fileChip').textContent='已选择：'+f.name+'（'+(f.size/1024).toFixed(0)+' KB）';
+  document.getElementById('importBtn').disabled=false;
+};
+function doImport(){
+  toast('导入完成（原型演示）——结果报告如下');
+  document.getElementById('report').style.display='block';
+  document.getElementById('report').scrollIntoView({behavior:'smooth'});
+}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.style.display='block';setTimeout(()=>t.style.display='none',1800);}
+</script>
+</body>
+</html>

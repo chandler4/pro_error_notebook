@@ -1,0 +1,12 @@
+{
+  "name": "error-notebook",
+  "version": "0.1.0",
+  "private": true,
+  "description": "错题整理应用（monorepo：error-notebook-be / error-notebook-ai / error-notebook-fe）",
+  "scripts": {
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7"
+  }
+}

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>错题本 · 原型导航</title>
+<style>
+  :root{--primary:#409EFF;--text:#303133;--muted:#909399;--border:#e4e7ed}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"PingFang SC","Microsoft YaHei",sans-serif;background:#f5f7fa;color:var(--text);
+       display:flex;align-items:center;justify-content:center;min-height:100vh}
+  .box{background:#fff;border-radius:8px;padding:32px 40px;box-shadow:0 2px 8px rgba(0,0,0,.06);max-width:640px;width:92%}
+  h1{font-size:20px;margin:0 0 4px;color:var(--primary)}
+  .sub{font-size:13px;color:var(--muted);margin-bottom:22px}
+  a.page{display:flex;justify-content:space-between;align-items:center;text-decoration:none;color:var(--text);
+         border:1px solid var(--border);border-radius:6px;padding:14px 18px;margin-bottom:10px;transition:.15s}
+  a.page:hover{border-color:var(--primary);background:#ecf5ff;color:var(--primary);transform:translateX(3px)}
+  .page .name{font-size:15px;font-weight:600}
+  .page .desc{font-size:12px;color:var(--muted);margin-top:3px}
+  .page .arrow{font-size:18px;color:#c0c4cc}
+  .foot{font-size:12px;color:#c0c4cc;margin-top:18px;line-height:1.8}
+</style>
+</head>
+<body>
+<div class="box">
+  <h1>📓 错题本 · 交互原型导航</h1>
+  <div class="sub">v2.0 · 按 spec/prototype-spec.md · 纯静态零依赖，点击进入</div>
+
+  <a class="page" href="list.html">
+    <div><div class="name">错题记录</div><div class="desc">分科 Tab · 待确认入口 · 搜索筛选 · 导出弹窗 · 详情抽屉</div></div>
+    <span class="arrow">→</span>
+  </a>
+  <a class="page" href="create.html">
+    <div><div class="name">新增 / 编辑错题（三步流）</div><div class="desc">多图上传 · 裁剪 · AI 解析（含失败演示）· 分项确认 · 草稿续编</div></div>
+    <span class="arrow">→</span>
+  </a>
+  <a class="page" href="logs.html">
+    <div><div class="name">运行日志</div><div class="desc">业务操作 / AI 调用质量查看 · 全文详情</div></div>
+    <span class="arrow">→</span>
+  </a>
+  <a class="page" href="backup.html">
+    <div><div class="name">数据备份</div><div class="desc">全量导出 · 导入双模式 · 行级错误报告</div></div>
+    <span class="arrow">→</span>
+  </a>
+
+  <div class="foot">
+    建议走查顺序：list →（待确认/编辑跳转）create → 返回 list 导出 → logs（筛失败）→ backup<br>
+    交互说明见 ui/interaction.md；本导航页与原型为演示产物，不进入应用实现。
+  </div>
+</div>
+</body>
+</html>

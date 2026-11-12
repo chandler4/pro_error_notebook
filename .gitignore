@@ -1,0 +1,30 @@
+# Java
+target/
+*.class
+*.jar
+.mvn/wrapper/maven-wrapper.jar
+
+# Node
+node_modules/
+dist/
+coverage/
+
+# 运行时数据与日志（不入库，备份单元=data/ 目录整体拷贝）
+data/
+logs/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 环境与敏感配置（真值仅环境变量注入，见 spec/security.md）
+*.env
+.env.local

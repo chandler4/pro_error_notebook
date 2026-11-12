@@ -1,0 +1,35 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(java -version)",
+      "Bash(mvn -version)",
+      "Bash(npm -v)",
+      "Bash(git --version)",
+      "Bash(git config *)",
+      "Bash(npm install *)",
+      "Bash(./mvnw --batch-mode test)",
+      "Bash(cd d:/vs_workspace/ai_spec_demo/error-notebook-ai)",
+      "Bash(export JAVA_HOME=\"/c/Program Files/Java/jdk1.8.0_221\")",
+      "Bash(./mvnw --batch-mode -q spring-boot:run)",
+      "Bash(cd d:/vs_workspace/ai_spec_demo/error-notebook-be)",
+      "Bash(npm run *)",
+      "Bash(curl -s -X POST http://127.0.0.1:8081/internal/parse -H \"Content-Type: application/json\" -d '{\"images\":[{\"url\":\"images/demo/q.jpg\",\"role\":\"QUESTION\"}]}')",
+      "Bash(curl -s http://127.0.0.1:8080/api/v1/meta/enums)",
+      "Bash(curl -s -X POST http://127.0.0.1:8080/api/v1/demo/parse -H \"Content-Type: application/json\" -d '{\"images\":[{\"url\":\"images/demo/q.jpg\",\"role\":\"QUESTION\"}]}')",
+      "Bash(curl -s http://127.0.0.1:5173/api/v1/meta/enums)",
+      "Bash(curl -s -X POST http://127.0.0.1:5173/api/v1/demo/parse -H \"Content-Type: application/json\" -d '{\"images\":[{\"url\":\"images/demo/q.jpg\",\"role\":\"QUESTION\"}]}')",
+      "Bash(curl -s http://127.0.0.1:5173/)",
+      "Bash(git rm *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(echo \"COMMIT_EXIT=$?\")",
+      "Read(//c/Users/chand/.m2//**)",
+      "Read(//c/Users/chand/.m2/**)",
+      "Read(//d/Tools/**)",
+      "Bash(tasklist //FI \"IMAGENAME eq java.exe\")",
+      "Bash(netstat -ano)",
+      "Bash(taskkill //F //PID 18208 //PID 26720)",
+      "Bash(wmic process *)"
+    ]
+  }
+}

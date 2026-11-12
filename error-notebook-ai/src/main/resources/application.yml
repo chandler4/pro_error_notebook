@@ -1,0 +1,29 @@
+# 错题整理应用 · AI 服务配置（架构 §4.3；敏感项仅环境变量注入，security.md §5）
+server:
+  port: 8081
+  address: 127.0.0.1 # 仅回环（api-contract §7：不对外暴露）
+
+spring:
+  application:
+    name: error-notebook-ai
+
+app:
+  ai:
+    # 模型服务（OpenAI Chat Completion 协议，2026-11-12 chandler 确认：智谱 GLM Coding Plan 套餐端点）
+    base-url: ${ERRNOTE_AI_BASE_URL:https://open.bigmodel.cn/api/coding/paas/v4}
+    api-key: ${ERRNOTE_AI_API_KEY:} # Coding Plan 专用 key（bigmodel.cn「个人编程套餐」页新建；与模型标准 API key 互不通用）；真值不落文件不进代码仓，日志脱敏（TC-S-03）
+    model: ${ERRNOTE_AI_MODEL:glm-5.3-flash} # GLM-5.3-Flash：原生多模态（图片输入 image_url），套餐内额度为 GLM-5.3 的 3 倍
+    connect-timeout-ms: 5000 # 连接 5s / 读取 90s（2026-11-11 15:38 决策）
+    read-timeout-ms: 90000
+    # 采样参数（2026-11-12 确认）：思考型模型按官方推荐 temperature=1 / top_p=0.95，
+    # 结构化质量由「仅输出严格 JSON」Prompt + few-shot + 防腐层 JSON 校验（失败重试 1 次）保证
+    temperature: 1
+    top-p: 0.95
+    # BE 静态图片访问（架构 §2.1 链路④：回环拉取处理图，A-2 固化）
+    be-base-url: ${ERRNOTE_AI_BE_BASE_URL:http://127.0.0.1:8080}
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true

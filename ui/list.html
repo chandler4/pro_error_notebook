@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>错题本原型 · 错题记录</title>
+<style>
+  :root{--primary:#409EFF;--bg:#f5f7fa;--text:#303133;--text2:#606266;--muted:#909399;--border:#e4e7ed;--danger:#f56c6c;--success:#67c23a;--warn:#e6a23c}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Helvetica Neue",Helvetica,"PingFang SC","Microsoft YaHei",Arial,sans-serif;color:var(--text);background:var(--bg)}
+  .layout{display:flex;min-height:100vh}
+  aside{width:200px;background:#fff;border-right:1px solid var(--border);flex-shrink:0}
+  .logo{height:56px;line-height:56px;text-align:center;font-weight:600;color:var(--primary);border-bottom:1px solid var(--border)}
+  .menu-item{display:block;padding:13px 20px;color:var(--text2);cursor:pointer;font-size:14px;position:relative;text-decoration:none}
+  .menu-item:hover{background:#f5f7fa}
+  .menu-item.active{color:var(--primary);background:#ecf5ff;font-weight:600}
+  .menu-item.active::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--primary)}
+  main{flex:1;padding:16px 20px;min-width:0}
+  .page-title{font-size:18px;margin:0 0 16px}
+  .card{background:#fff;border-radius:4px;padding:16px;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+  .tabbar{display:flex;align-items:center;gap:28px;border-bottom:1px solid var(--border);margin-bottom:16px}
+  .tabs{display:flex;gap:28px}
+  .tab{padding:8px 2px;cursor:pointer;color:var(--text2);font-size:14px;border-bottom:2px solid transparent}
+  .tab.active{color:var(--primary);border-color:var(--primary);font-weight:600}
+  .draft-entry{margin-left:auto;font-size:13px;color:var(--warn);cursor:pointer;padding-bottom:8px}
+  .draft-entry:hover{text-decoration:underline}
+  .filter{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+  .inp{height:32px;border:1px solid #dcdfe6;border-radius:4px;padding:0 10px;font-size:13px;outline:none;min-width:190px}
+  .inp:focus{border-color:var(--primary)}
+  select.inp{min-width:110px}
+  .btn{height:32px;padding:0 15px;border-radius:4px;border:1px solid #dcdfe6;background:#fff;color:var(--text2);cursor:pointer;font-size:13px}
+  .btn:hover{color:var(--primary);border-color:#c6e2ff;background:#ecf5ff}
+  .btn-primary{background:var(--primary);border-color:var(--primary);color:#fff}
+  .btn-primary:hover{background:#66b1ff;color:#fff}
+  .tbl{width:100%;border-collapse:collapse}
+  .tbl th{background:#fafafa;color:var(--muted);font-weight:500;text-align:left;padding:10px 12px;font-size:13px;border-bottom:1px solid var(--border)}
+  .tbl td{padding:12px;border-bottom:1px solid #ebeef5;font-size:13px;color:var(--text2);vertical-align:top}
+  .stem-cell{max-width:380px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.6}
+  .tag{display:inline-block;padding:1px 8px;font-size:12px;border-radius:3px;background:#ecf5ff;color:var(--primary);border:1px solid #d9ecff;margin:2px 4px 2px 0;white-space:nowrap}
+  .tag.warn{background:#fdf6ec;color:var(--warn);border-color:#faecd8}
+  .tag.plain{background:#f4f4f5;color:var(--muted);border:1px dashed #dcdfe6}
+  .badge-ai{background:#fdf6ec;color:var(--warn);border:1px solid #faecd8}
+  .badge-op{background:#ecf5ff;color:var(--primary);border:1px solid #d9ecff}
+  .link{color:var(--primary);cursor:pointer;background:none;border:none;font-size:13px;padding:0 4px}
+  .link.danger{color:var(--danger)}
+  .pager{display:flex;justify-content:space-between;align-items:center;margin-top:14px;font-size:13px;color:var(--muted)}
+  .pages{display:flex;gap:6px;align-items:center}
+  .pg{min-width:30px;height:30px;border:1px solid #dcdfe6;background:#fff;border-radius:4px;cursor:pointer;color:var(--text2);font-size:13px}
+  .pg.active{background:var(--primary);border-color:var(--primary);color:#fff}
+  .pg:disabled{color:#c0c4cc;cursor:not-allowed}
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;z-index:10}
+  .overlay.show{display:block}
+  .drawer{position:fixed;top:0;right:-520px;width:500px;height:100vh;background:#fff;z-index:11;transition:right .25s;overflow-y:auto;padding:20px;box-shadow:-2px 0 8px rgba(0,0,0,.1)}
+  .drawer.show{right:0}
+  .drawer h3{margin:0 0 4px;font-size:16px}
+  .sec{margin-top:18px}
+  .sec .label{font-size:13px;color:var(--muted);margin-bottom:6px}
+  .imgs{display:flex;gap:10px;flex-wrap:wrap}
+  .img-ph{position:relative;background:linear-gradient(135deg,#f0f2f5,#e4e7ed);border:1px dashed #c0c4cc;border-radius:4px;height:110px;width:150px;display:flex;align-items:center;justify-content:center;color:#a8abb2;font-size:12px}
+  .role-badge{position:absolute;left:6px;top:6px;font-size:11px;padding:1px 7px;border-radius:10px}
+  .role-badge.q{background:#ecf5ff;color:var(--primary);border:1px solid #d9ecff}
+  .role-badge.a{background:#fdf6ec;color:var(--warn);border:1px solid #faecd8}
+  .ans-item{background:#f0f9eb;border:1px solid #e1f3d8;color:var(--success);border-radius:3px;padding:4px 10px;display:inline-block;margin:2px 6px 2px 0;font-size:13px}
+  .analysis{background:#fafafa;border-radius:4px;padding:12px;font-size:13px;line-height:1.8;color:var(--text2);white-space:pre-wrap}
+  .meta{font-size:12px;color:var(--muted);line-height:1.9}
+  .dialog{position:fixed;left:50%;top:18%;transform:translate(-50%,0);background:#fff;border-radius:6px;width:420px;max-width:92vw;z-index:11;display:none;padding:20px;box-shadow:0 4px 20px rgba(0,0,0,.15)}
+  .dialog.show{display:block}
+  .dialog h4{margin:0 0 12px;font-size:15px}
+  .dialog p{font-size:13px;color:var(--text2)}
+  .dialog .foot{text-align:right;margin-top:16px}
+  .radio-row{display:flex;gap:18px;margin:10px 0;font-size:13px;color:var(--text2)}
+  .switch{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--text2)}
+  .track{width:36px;height:18px;border-radius:10px;background:#dcdfe6;position:relative;cursor:pointer;transition:.2s}
+  .track.on{background:var(--primary)}
+  .knob{position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;transition:.2s}
+  .track.on .knob{left:20px}
+  .cond{background:#f5f7fa;border-radius:4px;padding:8px 10px;font-size:12px;color:var(--muted);margin-top:10px;line-height:1.7}
+  .toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);background:#f0f9eb;border:1px solid #e1f3d8;color:var(--success);padding:8px 18px;border-radius:4px;font-size:13px;display:none;z-index:20}
+  .proto-note{margin-top:12px;font-size:12px;color:#c0c4cc;text-align:center}
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside>
+    <div class="logo">📓 错题本</div>
+    <a class="menu-item active">错题记录</a>
+    <a class="menu-item" href="logs.html">运行日志</a>
+    <a class="menu-item" href="backup.html">数据备份</a>
+  </aside>
+  <main>
+    <h1 class="page-title">错题记录</h1>
+    <div class="card">
+      <div class="tabbar">
+        <div class="tabs" id="tabs"></div>
+        <span class="draft-entry" id="draftEntry" onclick="toggleDraftView()">待确认 (2)</span>
+      </div>
+
+      <!-- 正式错题视图 -->
+      <div id="mainView">
+        <div class="filter">
+          <input id="kw" class="inp" placeholder="题目文字模糊搜索"/>
+          <input id="kp" class="inp" placeholder="知识点搜索，如：欧姆定律"/>
+          <input id="tg" class="inp" placeholder="标签，如：易错"/>
+          <button class="btn btn-primary" onclick="doQuery()">查询</button>
+          <button class="btn" onclick="doReset()">重置</button>
+          <span style="flex:1"></span>
+          <button class="btn btn-primary" onclick="location.href='create.html'">＋ 新增错题</button>
+          <button class="btn" onclick="openExport()">导出</button>
+        </div>
+        <table class="tbl">
+          <thead><tr>
+            <th style="width:36%">题目内容</th><th>题型</th><th>知识点 / 标签</th><th>来源</th><th>错题日期</th><th style="width:128px">操作</th>
+          </tr></thead>
+          <tbody id="tbody"></tbody>
+        </table>
+        <div class="pager"><span id="total"></span><div class="pages" id="pages"></div></div>
+      </div>
+
+      <!-- 待确认草稿视图（同页切换，prototype-spec P1） -->
+      <div id="draftView" style="display:none">
+        <div class="filter"><span style="font-size:13px;color:var(--muted)">解析草稿（PENDING_CONFIRM）——继续编辑或删除；确认后进入正式列表</span>
+          <span style="flex:1"></span><button class="btn" onclick="toggleDraftView()">返回正式列表</button></div>
+        <table class="tbl">
+          <thead><tr><th style="width:50%">题干预览</th><th>科目</th><th>创建时间</th><th style="width:150px">操作</th></tr></thead>
+          <tbody>
+            <tr><td>在探究"串联电路电压规律"的实验中，R₁、R₂串联，V₁测R₁、V₂…（草稿）</td><td>物理</td><td>2026-11-11 15:02</td>
+              <td><a class="link" href="create.html?id=3f8a2c1e&mode=draft">继续编辑</a><button class="link danger" onclick="toast('已删除草稿（原型演示）')">删除</button></td></tr>
+            <tr><td>化简：(a²−4)/(a²+4a+4) ÷ …（草稿）</td><td>数学</td><td>2026-11-10 21:40</td>
+              <td><a class="link" href="create.html?id=m-draft-02&mode=draft">继续编辑</a><button class="link danger" onclick="toast('已删除草稿（原型演示）')">删除</button></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="proto-note">原型 v2（按 prototype-spec P1）：三菜单 · 草稿同页入口 · 导出弹窗 · 详情抽屉 ｜ mock 数据、纯静态零依赖</div>
+    </div>
+  </main>
+</div>
+
+<div class="overlay" id="overlay" onclick="closeAll()"></div>
+
+<!-- 详情抽屉 -->
+<div class="drawer" id="drawer">
+  <h3>错题详情</h3>
+  <div class="meta" id="dMeta"></div>
+  <div class="sec"><div class="label">题目图片（多图 · 角色标注）</div>
+    <div class="imgs">
+      <div class="img-ph">🖼️ q14-题目图.jpg<span class="role-badge q">题目图</span></div>
+      <div class="img-ph">🖼️ answer-14.jpg<span class="role-badge a">解答图</span></div>
+    </div></div>
+  <div class="sec"><div class="label">题干</div><div id="dStem" style="font-size:14px;line-height:1.8"></div></div>
+  <div class="sec"><div class="label">标准答案</div><div id="dAnswer"></div></div>
+  <div class="sec"><div class="label">知识点</div><div id="dKps"></div></div>
+  <div class="sec"><div class="label">标签（自定义归类）</div><div id="dTags"></div></div>
+  <div class="sec"><div class="label">解析（Markdown/LaTeX，DOMPurify 消毒渲染）</div><div class="analysis" id="dAnalysis"></div></div>
+</div>
+
+<!-- 导出弹窗（prototype-spec §2.6） -->
+<div class="dialog" id="exportDialog">
+  <h4>导出错题</h4>
+  <div class="radio-row">
+    <label><input type="radio" name="fmt" value="markdown" onclick="fmtChange()"> Markdown（规约 JSON 结构，可再导入）</label>
+  </div>
+  <div class="radio-row" style="margin-top:0">
+    <label><input type="radio" name="fmt" value="pdf" checked onclick="fmtChange()"> PDF（可打印错题本）</label>
+  </div>
+  <div class="switch" id="reworkRow" style="margin:6px 0 4px">
+    <span>重做模式</span><span class="track on" id="rework" onclick="toggleRework()"><span class="knob"></span></span>
+    <span style="color:var(--muted);font-size:12px" id="reworkTip">遮盖答案与解析，答案页置于文末</span>
+  </div>
+  <div class="cond" id="condSummary"></div>
+  <div class="foot">
+    <button class="btn" onclick="closeAll()">取消</button>
+    <button class="btn btn-primary" onclick="doExport()">导出</button>
+  </div>
+</div>
+
+<!-- 删除确认 -->
+<div class="dialog" id="delDialog">
+  <h4>删除确认</h4>
+  <p id="delMsg"></p>
+  <div class="foot">
+    <button class="btn" onclick="closeAll()">取消</button>
+    <button class="btn" style="color:#f56c6c;border-color:#fbc4c4;background:#fef0f0" onclick="doDelete()">删除</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SUBJECTS=[{key:'math',name:'数学'},{key:'physics',name:'物理'},{key:'chemistry',name:'化学'}];
+const DB={
+physics:[
+{id:'3f8a2c1e',tags:['易错','二刷'],stem:'在探究"串联电路电压规律"的实验中，R₁、R₂串联，V₁测R₁、V₂测R₂，闭合开关后两电压表指针偏转角度相同（如图）。则电源电压为______V；R₁与R₂的阻值之比为______。',type:'填空',kps:['电压表读数','串联电路分压规律'],source:'2026—2027学年度上学期九年级物理学科素养调研',no:'14',date:'2026-11-10',answer:['12','1:5'],analysis:'**步骤1** 偏转角相同时，大量程读数是小量程的5倍……\n**步骤2** U = U₁ + U₂ = 12 V……\n**易错点** 偏转角相同≠示数相同。'},
+{id:'p02',stem:'把标有"6V 3W"的小灯泡L₁与"6V 6W"的L₂串联接在12V电源上（灯丝电阻不变），电路中的电流为____A，较亮的灯是____。',type:'填空',kps:['额定功率','串联电路'],source:'九年级物理月考卷',no:'17',date:'2026-11-05',answer:['0.5','L₁'],analysis:'R=U²/P 得 R₁=12Ω、R₂=6Ω……'},
+{id:'p03',stem:'关于温度、热量、内能，下列说法正确的是（　）A.温度高的物体内能一定大 B.物体吸收热量温度一定升高 C.做功可以改变物体内能 D.热量总是从内能大的物体传向内能小的物体',type:'选择',kps:['内能','热量'],source:'物理单元测试·热学',no:'3',date:'2026-10-30',answer:['C'],analysis:'内能还与质量、状态有关……'},
+{id:'p04',tags:['期中考'],stem:'重200N的木箱在50N水平拉力作用下沿地面匀速前进5m，拉力做功____J，重力做功____J。',type:'填空',kps:['功的计算'],source:'物理周测三',no:'9',date:'2026-10-22',answer:['250','0'],analysis:'W=Fs=250J；重力方向无位移。'},
+{id:'p05',stem:'请写出两条日常生活中安全用电的常识。',type:'简答',kps:['安全用电'],source:'物理期末模拟',no:'26',date:'2026-10-15',answer:['不用湿手触碰开关插座','不靠近高压带电体'],analysis:'示例答案……'},
+{id:'p06',stem:'闭合开关后发现电流表指针反偏，原因是____；电压表示数接近电源电压而L₁不亮，故障可能是____。',type:'实验',kps:['电路故障','电流表使用'],source:'物理实验专题卷',no:'12',date:'2026-10-08',answer:['正负接线柱接反','L₁断路'],analysis:'指针反偏→接线柱接反……'}
+],
+math:[
+{id:'m01',tags:['易错'],stem:'已知关于x的一元二次方程 x²−4x+m=0 有两个不相等的实数根，求m的取值范围。',type:'计算',kps:['根的判别式','一元二次方程'],source:'九年级数学期中试卷',no:'21',date:'2026-11-08',answer:['m<4'],analysis:'Δ=16−4m>0 → m<4。'},
+{id:'m02',stem:'二次函数 y=ax²+bx+c 的图象如图，对称轴为 x=1，与x轴一个交点为(−1,0)。结论：①abc<0 ②b²−4ac>0 ③3a+c>0，正确的有（　）',type:'选择',kps:['二次函数图象性质'],source:'数学专题卷·二次函数',no:'10',date:'2026-11-02',answer:['①②③'],analysis:'由开口、对称轴、交点逐项判断……'},
+{id:'m03',stem:'如图，在Rt△ABC中，∠C=90°，AC=6，BC=8，以AB为直径作⊙O，求图中阴影部分的面积（结果保留π）。',type:'计算',kps:['圆的性质','扇形面积'],source:'数学月考卷',no:'23',date:'2026-10-26',answer:['24−6.25π'],analysis:'连 OC、OD 构造等腰三角形……'},
+{id:'m04',stem:'D、E 分别在 AB、AC 上，AD=2，AB=6，AE=3。当 AC=____时，△ADE∽△ACB。',type:'填空',kps:['相似三角形判定'],source:'数学周测二',no:'8',date:'2026-10-20',answer:['9'],analysis:'2/6=3/AC → AC=9。'},
+{id:'m05',stem:'某商品原价100元，连续两次降价后为81元，求平均每次降价的百分率。',type:'应用',kps:['一元二次方程应用'],source:'数学单元测试',no:'16',date:'2026-10-12',answer:['10%'],analysis:'100(1−x)²=81 → x=10%。'},
+{id:'m06',stem:'不透明袋子中装有3个红球和2个白球，摸出一球不放回再摸一次，两次都是红球的概率为____。',type:'填空',kps:['列表法求概率'],source:'数学期末模拟',no:'6',date:'2026-09-30',answer:['3/10'],analysis:'P=3/5×2/4=3/10。'}
+],
+chemistry:[
+{id:'c01',stem:'下列变化属于化学变化的是（　）A.冰块融化 B.汽油挥发 C.蜡烛燃烧 D.灯泡发光',type:'选择',kps:['物理变化与化学变化'],source:'化学入门测试',no:'1',date:'2026-11-06',answer:['C'],analysis:'蜡烛燃烧生成新物质。'},
+{id:'c02',stem:'写出化学方程式：①铁在氧气中燃烧；②实验室用高锰酸钾制氧气。',type:'填空',kps:['化学方程式书写'],source:'化学单元测试·第三单元',no:'14',date:'2026-10-31',answer:['3Fe+2O₂→Fe₃O₄','2KMnO₄→K₂MnO₄+MnO₂+O₂↑'],analysis:'注意条件与气体符号……'},
+{id:'c03',stem:'ag 铁与 bg 稀硫酸恰好完全反应，生成氢气____g（用含 a 的式子表示）。',type:'计算',kps:['质量守恒定律','化学方程式计算'],source:'化学期中试卷',no:'20',date:'2026-10-24',answer:['2a/56'],analysis:'56/2 = a/m。'},
+{id:'c04',stem:'下列金属中，能与稀盐酸反应放出氢气且活动性最强的是（　）A.Cu B.Zn C.Fe D.Ag',type:'选择',kps:['金属活动性顺序'],source:'金属专题练习',no:'5',date:'2026-10-18',answer:['B'],analysis:'Zn 活动性强于 Fe 且排在 H 前。'},
+{id:'c05',stem:'粗盐提纯实验中，蒸发滤液时当出现____时停止加热；玻璃棒的作用是____。',type:'实验',kps:['粗盐提纯','实验基本操作'],source:'化学实验卷',no:'17',date:'2026-10-10',answer:['大量固体','搅拌防飞溅'],analysis:'利用余热蒸干。'}
+]};
+
+let state={subject:'physics',kw:'',kp:'',page:1,size:5};
+let delTarget=null,showDraft=false,rework=true;
+
+function renderTabs(){
+  document.getElementById('tabs').innerHTML=SUBJECTS.map(s=>
+    `<div class="tab ${state.subject===s.key?'active':''}" onclick="switchSubject('${s.key}')">${s.name}</div>`).join('');
+}
+function switchSubject(k){state.subject=k;state.page=1;renderTable();}
+function filtered(){
+  return DB[state.subject].filter(r=>(!state.kw||r.stem.includes(state.kw))&&(!state.kp||r.kps.join(' ').includes(state.kp)||r.stem.includes(state.kp))&&(!state.tg||(r.tags||[]).join(' ').includes(state.tg)));
+}
+function renderTable(){
+  const rows=filtered(),total=rows.length,pages=Math.max(1,Math.ceil(total/state.size));
+  if(state.page>pages)state.page=pages;
+  const list=rows.slice((state.page-1)*state.size,state.page*state.size);
+  document.getElementById('tbody').innerHTML=list.length?list.map(r=>`
+    <tr>
+      <td><div class="stem-cell">${r.stem}</div></td>
+      <td><span class="tag warn">${r.type}</span></td>
+      <td>${r.kps.map(k=>`<span class="tag">${k}</span>`).join('')}${(r.tags||[]).map(t=>`<span class="tag plain">${t}</span>`).join('')}</td>
+      <td style="max-width:170px">${r.source}<div style="color:#c0c4cc;font-size:12px;margin-top:2px">第${r.no}题</div></td>
+      <td>${r.date}</td>
+      <td><button class="link" onclick="viewQ('${r.id}')">查看</button><a class="link" href="create.html?id=${r.id}&mode=edit">编辑</a><button class="link danger" onclick="askDelete('${r.id}')">删除</button></td>
+    </tr>`).join('')
+    :`<tr><td colspan="6" style="text-align:center;color:#909399;padding:36px 0">暂无符合条件的错题，点击右上角「新增错题」录入</td></tr>`;
+  document.getElementById('total').textContent=`共 ${total} 条`;
+  let html=`<button class="pg" ${state.page===1?'disabled':''} onclick="goPage(${state.page-1})">‹</button>`;
+  for(let i=1;i<=pages;i++)html+=`<button class="pg ${state.page===i?'active':''}" onclick="goPage(${i})">${i}</button>`;
+  html+=`<button class="pg" ${state.page===pages?'disabled':''} onclick="goPage(${state.page+1})">›</button>`;
+  document.getElementById('pages').innerHTML=html;
+}
+function goPage(p){state.page=p;renderTable();}
+function doQuery(){state.kw=document.getElementById('kw').value.trim();state.kp=document.getElementById('kp').value.trim();state.tg=document.getElementById('tg').value.trim();state.page=1;renderTable();}
+function doReset(){document.getElementById('kw').value='';document.getElementById('kp').value='';document.getElementById('tg').value='';doQuery();}
+function toggleDraftView(){
+  showDraft=!showDraft;
+  document.getElementById('mainView').style.display=showDraft?'none':'block';
+  document.getElementById('draftView').style.display=showDraft?'block':'none';
+}
+function viewQ(id){
+  const r=DB[state.subject].find(x=>x.id===id);if(!r)return;
+  const s=SUBJECTS.find(x=>x.key===state.subject);
+  document.getElementById('dMeta').innerHTML=`${s.name} · 九年级 · ${r.type} ｜ 来源：${r.source} 第${r.no}题 ｜ 错题日期：${r.date}`;
+  document.getElementById('dStem').textContent=r.stem;
+  document.getElementById('dAnswer').innerHTML=r.answer.map((a,i)=>`<span class="ans-item">（${i+1}）${a}</span>`).join('');
+  document.getElementById('dKps').innerHTML=r.kps.map(k=>`<span class="tag">${k}</span>`).join('');
+  document.getElementById('dTags').innerHTML=(r.tags||[]).map(t=>`<span class="tag plain">${t}</span>`).join('')||'<span style="color:#c0c4cc;font-size:12px">未标注</span>';
+  document.getElementById('dAnalysis').textContent=r.analysis;
+  show('drawer');
+}
+function askDelete(id){delTarget=id;document.getElementById('delMsg').textContent='删除后题目及图片将一并物理删除，且不可恢复，确认删除？';show('delDialog');}
+function doDelete(){
+  const arr=DB[state.subject],i=arr.findIndex(x=>x.id===delTarget);
+  if(i>-1)arr.splice(i,1);closeAll();renderTable();toast('已删除（原型演示）');
+}
+function openExport(){
+  const s=SUBJECTS.find(x=>x.key===state.subject);
+  const conds=[`科目：${s.name}`];
+  if(state.kw)conds.push(`题干含「${state.kw}」`);
+  if(state.kp)conds.push(`知识点含「${state.kp}」`);
+  document.getElementById('condSummary').textContent='当前筛选条件：'+conds.join('；')+'（导出遵循当前条件）';
+  show('exportDialog');
+}
+function fmtChange(){reworkRowOpacity();}
+function reworkRowOpacity(){
+  const isPdf=document.querySelector('input[name=fmt]:checked').value==='pdf';
+  document.getElementById('reworkRow').style.opacity=isPdf?1:.4;
+}
+function toggleRework(){
+  const isPdf=document.querySelector('input[name=fmt]:checked').value==='pdf';
+  if(!isPdf){toast('重做模式仅 PDF 支持');return;}
+  rework=!rework;document.getElementById('rework').className='track'+(rework?' on':'');
+}
+function doExport(){
+  const fmt=document.querySelector('input[name=fmt]:checked').value;
+  closeAll();toast(fmt==='pdf'?(rework?'已开始下载 错题本-重做模式.pdf（原型演示）':'已开始下载 错题本.pdf（原型演示）'):'已开始下载 错题记录.md（原型演示）');
+}
+function show(id){document.getElementById('overlay').classList.add('show');document.getElementById(id).classList.add('show');}
+function closeAll(){document.getElementById('overlay').classList.remove('show');document.querySelectorAll('.drawer,.dialog').forEach(e=>e.classList.remove('show'));}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.style.display='block';setTimeout(()=>t.style.display='none',1800);}
+renderTabs();renderTable();reworkRowOpacity();
+</script>
+</body>
+</html>
