@@ -141,6 +141,26 @@ class ParseServiceImplTest {
             contains("模型输出无效"));
   }
 
+  // W-2（2026-11-12 chandler 确认）：AI 侧 40000 参数错误（如图片 url 失效）原样透传，message 带定位
+  @Test
+  void aiParamError40000PassesThroughWithDetail() {
+    when(aiServiceClient.parse(any(AiParseRequest.class)))
+        .thenReturn(ApiResponse.error(40000, "images: 图片拉取失败 images/202611/missing.jpg"));
+
+    assertThatThrownBy(() -> service.parse(images))
+        .isInstanceOf(BusinessException.class)
+        .extracting("code", "message")
+        .containsExactly(40000, "images: 图片拉取失败 images/202611/missing.jpg");
+    verifyNoInteractions(wrongQuestionMapper);
+    verify(businessLogService)
+        .recordAiFailure(
+            anyString(),
+            anyLong(),
+            anyString(),
+            org.mockito.ArgumentMatchers.eq(40000),
+            contains("missing.jpg"));
+  }
+
   // 未知业务码归并为 42001（契约 3.2 仅暴露 42001/42002/40000）
   @Test
   void unknownAiCodeNormalizedTo42001() {

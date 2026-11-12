@@ -80,9 +80,12 @@ public class ParseServiceImpl implements ParseService {
       throw new BusinessException(ErrorCode.AI_PARSE_FAILED);
     }
     if (response.getCode() != 0) {
-      // AI 业务错误透传：42002 保留语义，其余（含未知码）归并 42001（契约 3.2）
+      // AI 业务错误透传：42002/40000 保留语义（W-2：图片 url 失效等参数错误带明细直达前端），其余（含未知码）归并 42001
       if (response.getCode() == ErrorCode.AI_UNAVAILABLE.getCode()) {
         throw new BusinessException(ErrorCode.AI_UNAVAILABLE, response.getMessage());
+      }
+      if (response.getCode() == ErrorCode.PARAM_INVALID.getCode()) {
+        throw new BusinessException(ErrorCode.PARAM_INVALID, response.getMessage());
       }
       throw new BusinessException(ErrorCode.AI_PARSE_FAILED, response.getMessage());
     }

@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
+import com.errnote.ai.common.BusinessException;
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -56,15 +57,30 @@ class ImageFetchServiceTest {
   }
 
   @Test
-  @DisplayName("拉取失败抛 IllegalStateException（由防腐层映射 42002）")
-  void fetchFailureThrows() {
+  @DisplayName("W-2：拉取失败映射 40000 参数错误并携带 url（供 BE 透传，可定位失效图片）")
+  void fetchFailureThrows40000WithUrl() {
     given(
             restTemplate.getForObject(
                 eq("http://127.0.0.1:8080/files/images/x/missing.jpg"), eq(byte[].class)))
-        .willThrow(new RuntimeException("connect refused"));
+        .willThrow(new RuntimeException("404 Not Found"));
 
     assertThatThrownBy(() -> service.toDataUrl("images/x/missing.jpg"))
-        .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("images/x/missing.jpg");
+        .isInstanceOf(BusinessException.class)
+        .extracting("code", "message")
+        .containsExactly(40000, "images: 图片拉取失败 images/x/missing.jpg");
+  }
+
+  @Test
+  @DisplayName("W-2：拉取为空同样映射 40000 并携带 url")
+  void fetchEmptyBytesThrows40000() {
+    given(
+            restTemplate.getForObject(
+                eq("http://127.0.0.1:8080/files/images/x/empty.jpg"), eq(byte[].class)))
+        .willReturn(null);
+
+    assertThatThrownBy(() -> service.toDataUrl("images/x/empty.jpg"))
+        .isInstanceOf(BusinessException.class)
+        .extracting("code", "message")
+        .containsExactly(40000, "images: 图片拉取为空 images/x/empty.jpg");
   }
 }
