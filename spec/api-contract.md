@@ -2,7 +2,7 @@
 
 | 项 | 内容 |
 |---|---|
-| 文档版本 | v1.5 |
+| 文档版本 | v1.6 |
 | 日期 | 2026-11-12 |
 | 作者 | chandler（决策评审）、AI 助手（起草） |
 | 状态 | ✅ 已评审通过（评审人：chandler，2026-11-11） |
@@ -19,6 +19,8 @@
 **v1.4 扩展（2026-11-12，chandler）**：review 补缺——① 3.8 新增 `POST /api/v1/questions/drafts` 创建空草稿（FR-A4「转手动填写」入口，零 AI 调用，关闭 TC-P-07 契约缺口）；② 3.3 补编辑模式重新解析语义（确认成功后前端联动删除旧记录）。
 
 **v1.5 扩展（2026-11-12，chandler）**：3.11 补 `meta/knowledge-points` 响应形状 `data: [{name, useCount}]`（F workstream 实现中发现形状未定义，落档修正；B-10 实现对齐）。
+
+**v1.6 扩展（2026-11-12，chandler）**：三路实现侧契约决策落档——① 3.5 默认排序 `wrongDate DESC, createdAt DESC`；② 备份导入 >20MB → 43001（TC-S-04 补码）、overwrite 模式知识点「旧减计+新累积」语义；③ 7.1 内部端点补 40000 参数校验码并明示「错误路径恒 HTTP 200、调用方判 code」；④ 40000 场景补坏 JSON 请求体兜底；⑤ 7.1 示例 model 更正为 glm-5.3-flash。
 
 ---
 
@@ -50,14 +52,14 @@
 | code | 含义 | 场景 |
 |---|---|---|
 | 0 | 成功 | — |
-| 40000 | 参数校验失败 | message 含字段级明细 |
+| 40000 | 参数校验失败 | message 含字段级明细；含请求体不可读（坏 JSON）兜底 |
 | 40400 | 资源不存在 | 错题/草稿 id 无效 |
 | 41001 | 图片格式不支持 | 非 jpg/png（魔数校验） |
 | 41002 | 图片超过大小限制 | >10MB |
 | 41003 | 图片数量超限 | 单次 >6 张 |
 | 42001 | AI 解析失败 | 模型输出无效/超时，重试后仍失败 |
 | 42002 | AI 服务不可达 | 网络错误/配置缺失 |
-| 43001 | 导入文件格式错误 | 非 JSON / 结构不符 |
+| 43001 | 导入文件格式错误 | 非 JSON / 结构不符 / 超 20MB（TC-S-04） |
 | 43002 | 导入数据校验失败 | data 携带行级错误明细 |
 | 50000 | 系统内部错误 | 未预期异常（日志留痕） |
 
@@ -114,6 +116,7 @@
 ### 3.5 GET `/api/v1/questions` — 分页筛选（仅 CONFIRMED）
 
 - 查询参数：`subject`、`keyword`（题干模糊）、`knowledgePoint`、`tag`（标签模糊，FR-B7）、`questionType`、`dateFrom`、`dateTo`、`page`、`size`
+- 默认排序：`wrongDate DESC, createdAt DESC`（v1.6 落档，与 B-7 实现一致）
 - 响应：`data: { list: [详情结构…], total, page, size }`
 
 ### 3.6 PUT `/api/v1/questions/{id}` — 编辑（全字段）
@@ -144,7 +147,7 @@
 | 方法路径 | 说明 |
 |---|---|
 | GET `/api/v1/backup/export` | 全量 CONFIRMED 数据 → 规约 JSON 数组文件（含 questionImage 兼容字段与 questionImages 扩展） |
-| POST `/api/v1/backup/import?mode=skip\|overwrite` | multipart JSON 文件；按 errorQuestionId 幂等：skip 跳过已存在 / overwrite 覆盖更新；data 返回 `{total, inserted, skipped, overwritten, errors:[{line, reason}]}` |
+| POST `/api/v1/backup/import?mode=skip\|overwrite` | multipart JSON 文件（**>20MB 拒绝，43001**，v1.6 落档）；按 errorQuestionId 幂等：skip 跳过已存在 / overwrite 覆盖更新（**overwrite 知识点语义：旧知识点减计 + 新知识点累积**，v1.6 落档）；data 返回 `{total, inserted, skipped, overwritten, errors:[{line, reason}]}` |
 
 ### 3.11 元数据
 
@@ -210,11 +213,11 @@ request<T>(method, url, { json?, form?, timeout? = 30000 }): Promise<T>
              "standardAnswer": ["12", "1:5"], "knowledgePoints": ["…"], "knowledgeAnalysis": "…",
              "tags": [] },
   "rawModelResponse": "{…模型返回原文全文…}",
-  "model": "glm-4v",
+  "model": "glm-5.3-flash",
   "durationMs": 18342
 }
 ```
 
-- 错误码：42001（输出非法，已重试 1 次）/ 42002（模型不可达/超时）；错误响应同统一结构 `{code, message, data}`。
+- 错误码：42001（输出非法，已重试 1 次）/ 42002（模型不可达/超时）/ 40000（请求参数校验失败，如空 images，message 含字段明细——v1.6 落档）；**所有错误路径均 HTTP 200**，调用方必须解包判 `code`。
 - 约定：`draft.tags` 恒为空数组（BR-11：标签纯手工标注）；`rawModelResponse` 供 BE 落 `business_log`（BR-09/TC-G-03），AI 服务自身**不持久化**任何数据；图片由 BE 侧文件存储提供访问（AI 服务按 URL 拉取或由 BE 传内容，实现取其一并在 A-2 任务固化——默认 AI 服务回环直接读 BE 静态 `/files/**`）。
 - 变更：内部契约变更同样走第 6 章流程，并同步 [architecture.md](architecture.md) §5.2。
