@@ -121,9 +121,9 @@ class ParseServiceImplTest {
             org.mockito.ArgumentMatchers.eq(RAW));
   }
 
-  // TC-P-02（BE 侧）：AI 业务失败 42001 原样透传，不入库不落日志
+  // TC-P-02（BE 侧）：AI 业务失败 42001 原样透传，不入库；W-1 修复后失败留痕 AI_CALL
   @Test
-  void aiBusinessError42001PassesThroughWithoutPersisting() {
+  void aiBusinessError42001PassesThroughAndLogsFailure() {
     when(aiServiceClient.parse(any(AiParseRequest.class)))
         .thenReturn(ApiResponse.error(42001, "AI 解析失败：模型输出无效（已重试 1 次）"));
 
@@ -131,7 +131,14 @@ class ParseServiceImplTest {
         .isInstanceOf(BusinessException.class)
         .extracting("code", "message")
         .containsExactly(42001, "AI 解析失败：模型输出无效（已重试 1 次）");
-    verifyNoInteractions(wrongQuestionMapper, businessLogService);
+    verifyNoInteractions(wrongQuestionMapper);
+    verify(businessLogService)
+        .recordAiFailure(
+            anyString(),
+            anyLong(),
+            contains("images=2"),
+            org.mockito.ArgumentMatchers.eq(42001),
+            contains("模型输出无效"));
   }
 
   // 未知业务码归并为 42001（契约 3.2 仅暴露 42001/42002/40000）
@@ -144,7 +151,14 @@ class ParseServiceImplTest {
         .isInstanceOf(BusinessException.class)
         .extracting("code")
         .isEqualTo(42001);
-    verifyNoInteractions(wrongQuestionMapper, businessLogService);
+    verifyNoInteractions(wrongQuestionMapper);
+    verify(businessLogService)
+        .recordAiFailure(
+            anyString(),
+            anyLong(),
+            anyString(),
+            org.mockito.ArgumentMatchers.eq(42001),
+            anyString());
   }
 
   // TC-P-03：网络异常 → 42002，不泄漏底层异常细节
@@ -157,7 +171,15 @@ class ParseServiceImplTest {
         .isInstanceOf(BusinessException.class)
         .extracting("code", "message")
         .containsExactly(42002, "AI 服务不可达");
-    verifyNoInteractions(wrongQuestionMapper, businessLogService);
+    verifyNoInteractions(wrongQuestionMapper);
+    // W-1/BR-01：失败留痕 AI_CALL，且 message 为脱敏文案（不携带 Connection refused 等底层细节）
+    verify(businessLogService)
+        .recordAiFailure(
+            anyString(),
+            anyLong(),
+            anyString(),
+            org.mockito.ArgumentMatchers.eq(42002),
+            org.mockito.ArgumentMatchers.eq("AI 服务不可达"));
   }
 
   // 成功码但 data/draft 缺失 → 42001（防腐：不信任 AI 输出完整性）
@@ -169,7 +191,14 @@ class ParseServiceImplTest {
 
     assertThatThrownBy(() -> service.parse(images)).extracting("code").isEqualTo(42001);
     assertThatThrownBy(() -> service.parse(images)).extracting("code").isEqualTo(42001);
-    verifyNoInteractions(wrongQuestionMapper, businessLogService);
+    verifyNoInteractions(wrongQuestionMapper);
+    verify(businessLogService, org.mockito.Mockito.times(2))
+        .recordAiFailure(
+            anyString(),
+            anyLong(),
+            anyString(),
+            org.mockito.ArgumentMatchers.eq(42001),
+            anyString());
   }
 
   // durationMs/model 缺失时日志仍落（空值安全，不抛 NPE）

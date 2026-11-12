@@ -43,6 +43,22 @@ class BusinessLogServiceImplTest {
     assertThat(saved.getDurationMs()).isEqualTo(18342);
   }
 
+  // W-1（2026-11-12 chandler 确认）：AI 调用失败留痕——success=false + 契约错误码 + 失败原因
+  @Test
+  void recordAiFailureSavesErrorCodeAndMessage() {
+    service.recordAiFailure("", 1959L, "parse images=1", 42002, "AI 服务不可达（网络错误或超时）");
+
+    ArgumentCaptor<BusinessLog> captor = ArgumentCaptor.forClass(BusinessLog.class);
+    verify(mapper).insert(captor.capture());
+    BusinessLog saved = captor.getValue();
+    assertThat(saved.getLogType()).isEqualTo("AI_CALL");
+    assertThat(saved.getModule()).isEqualTo("OpenAiVisionAdapter#parse");
+    assertThat(saved.getSuccess()).isFalse();
+    assertThat(saved.getErrorCode()).isEqualTo(42002);
+    assertThat(saved.getDurationMs()).isEqualTo(1959L);
+    assertThat(saved.getResponseContent()).isEqualTo("AI 服务不可达（网络错误或超时）");
+  }
+
   // TC-G-04 规约5：入库失败仅告警不抛出
   @Test
   void saveSwallowsPersistFailure() {

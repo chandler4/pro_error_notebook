@@ -42,15 +42,24 @@ public class ParseServiceImpl implements ParseService {
 
   @Override
   public WrongQuestion parse(List<ImageRef> images) {
-    AiParseResponse ai = callAi(images);
-    WrongQuestion entity = toPendingDraft(ai.getDraft(), images);
-    wrongQuestionMapper.insert(entity);
-    businessLogService.recordAi(
-        ai.getModel() == null ? "" : ai.getModel(),
-        ai.getDurationMs() == null ? 0L : ai.getDurationMs(),
-        "parse images=" + images.size(),
-        ai.getRawModelResponse() == null ? "" : ai.getRawModelResponse());
-    return entity;
+    long start = clock.millis();
+    try {
+      AiParseResponse ai = callAi(images);
+      WrongQuestion entity = toPendingDraft(ai.getDraft(), images);
+      wrongQuestionMapper.insert(entity);
+      businessLogService.recordAi(
+          ai.getModel() == null ? "" : ai.getModel(),
+          ai.getDurationMs() == null ? 0L : ai.getDurationMs(),
+          "parse images=" + images.size(),
+          ai.getRawModelResponse() == null ? "" : ai.getRawModelResponse());
+      return entity;
+    } catch (BusinessException e) {
+      // W-1（2026-11-12 chandler 确认）：AI 调用失败同样留痕 AI_CALL（success=false+错误码），
+      // 运行日志页「AI 调用+失败」可追溯；参数校验 40000 在 Controller 层拦截，不进入此路径
+      businessLogService.recordAiFailure(
+          "", clock.millis() - start, "parse images=" + images.size(), e.getCode(), e.getMessage());
+      throw e;
+    }
   }
 
   /** 调内部契约（单次；重试收敛于 AI 服务 OpenAiVisionAdapter）。 */

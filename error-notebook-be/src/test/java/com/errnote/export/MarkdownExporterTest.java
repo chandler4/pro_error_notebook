@@ -38,7 +38,8 @@ class MarkdownExporterTest {
 
   private static String golden(String name) throws Exception {
     try (InputStream in = MarkdownExporterTest.class.getClassLoader().getResourceAsStream(name)) {
-      return new String(readAll(in), StandardCharsets.UTF_8);
+      // Windows 检出（autocrlf）下夹具可能为 CRLF，导出产物恒 LF——比对按 LF 归一（EOL 无关）
+      return new String(readAll(in), StandardCharsets.UTF_8).replace("\r\n", "\n");
     }
   }
 

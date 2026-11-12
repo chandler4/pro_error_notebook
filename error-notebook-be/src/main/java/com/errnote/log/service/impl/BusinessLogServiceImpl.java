@@ -53,6 +53,21 @@ public class BusinessLogServiceImpl implements BusinessLogService {
   }
 
   @Override
+  public void recordAiFailure(
+      String model, long durationMs, String requestSummary, int errorCode, String errorMessage) {
+    BusinessLog businessLog = new BusinessLog();
+    businessLog.setLogType(BusinessLog.TYPE_AI_CALL);
+    businessLog.setModule("OpenAiVisionAdapter#parse");
+    businessLog.setAction("AI解析 model=" + model);
+    businessLog.setRequestContent(requestSummary);
+    businessLog.setResponseContent(errorMessage == null ? "" : errorMessage);
+    businessLog.setSuccess(false);
+    businessLog.setErrorCode(errorCode);
+    businessLog.setDurationMs(durationMs);
+    save(businessLog);
+  }
+
+  @Override
   public PageResult<BusinessLog> query(
       String logType,
       String module,
