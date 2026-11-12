@@ -2,7 +2,6 @@ package com.errnote.common;
 
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -36,8 +35,11 @@ public class GlobalExceptionHandler {
         ErrorCode.INTERNAL_ERROR.getCode(), ErrorCode.INTERNAL_ERROR.getDefaultMessage());
   }
 
-  @SuppressWarnings("unused")
-  private static String fieldInfo(FieldError fe) {
-    return fe.getField() + ": " + fe.getDefaultMessage();
+  /** multipart 请求体超限（spring.servlet.multipart 上限触发）：映射 41003。 */
+  @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+  public ApiResponse<Void> handleMaxUpload(
+      org.springframework.web.multipart.MaxUploadSizeExceededException e) {
+    return ApiResponse.error(
+        ErrorCode.IMAGE_TOO_MANY.getCode(), ErrorCode.IMAGE_TOO_MANY.getDefaultMessage());
   }
 }
