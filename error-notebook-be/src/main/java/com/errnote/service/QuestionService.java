@@ -5,6 +5,7 @@ import com.errnote.dto.QuestionDetail;
 import com.errnote.dto.QuestionQuery;
 import com.errnote.dto.QuestionSaveRequest;
 import com.errnote.entity.WrongQuestion;
+import java.util.List;
 
 /** 错题详情/确认/编辑/删除/列表/草稿管理（api-contract 3.3~3.8）。 */
 public interface QuestionService {
@@ -23,6 +24,9 @@ public interface QuestionService {
 
   /** 分页筛选（3.5）：仅 CONFIRMED；错题日期倒序、同日创建倒序；size 上限 50。 */
   PageResult<QuestionDetail> list(QuestionQuery query);
+
+  /** 导出用全量列表（FR-B4）：同 3.5 筛选语义，内部按 50/页翻页取全（仅 CONFIRMED）。 */
+  List<QuestionDetail> listAll(QuestionQuery query);
 
   /** 创建空草稿（3.8 / FR-A4 转手动填写）：零 AI 调用（TC-P-07），PENDING_CONFIRM。 */
   WrongQuestion createEmptyDraft();

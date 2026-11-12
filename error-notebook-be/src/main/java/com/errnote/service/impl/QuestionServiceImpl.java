@@ -117,6 +117,23 @@ public class QuestionServiceImpl implements QuestionService {
     return PageResult.of(details, page.getTotal(), (int) page.getCurrent(), (int) page.getSize());
   }
 
+  @Override
+  public List<QuestionDetail> listAll(QuestionQuery query) {
+    List<QuestionDetail> all = new ArrayList<>();
+    QuestionQuery paged = query;
+    int page = 1;
+    while (true) {
+      paged.setPage(page);
+      paged.setSize(MAX_PAGE_SIZE); // 分页插件全局上限 50，按页取全
+      PageResult<QuestionDetail> result = list(paged);
+      all.addAll(result.getList());
+      if (result.getList().size() < MAX_PAGE_SIZE || all.size() >= result.getTotal()) {
+        return all;
+      }
+      page++;
+    }
+  }
+
   // TC-P-07：空草稿零 AI 调用——本类无任何 AI 依赖，结构上不可能触发模型调用
   @Override
   public WrongQuestion createEmptyDraft() {

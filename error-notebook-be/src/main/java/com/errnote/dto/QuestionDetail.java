@@ -4,12 +4,16 @@ import com.errnote.entity.WrongQuestion;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /** 详情响应结构（api-contract 3.4，错题/草稿共用）：实体 JSON TEXT 列在此展开为规约数组形态（TC-D-03 camelCase 与规约一致）。 */
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class QuestionDetail {
 
   private String errorQuestionId;
