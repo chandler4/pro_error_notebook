@@ -18,6 +18,8 @@ export default defineConfig({
     // 由 node-canvas 解码并派发 load 事件（image.ts 压缩链路依赖此行为）
     environmentOptions: {
       jsdom: {
+        // usable：Image 的 data: URL 经 node-canvas 解码并派发 load（image 压缩链路依赖）。
+        // 外部资源（blob:/http:）在 vitest.setup.ts 中过滤，避免真实网络请求。
         resources: 'usable',
       },
     },

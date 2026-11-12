@@ -55,7 +55,10 @@ function canvasToBlob(
   })
 }
 
-/** 压缩图片：长边超过 maxEdge 时等比缩小并转 JPEG；小图原样返回（不放大、不重编码）。 */
+/**
+ * 压缩图片：长边超过 maxEdge 时等比缩小并转 JPEG；小图原样返回（不放大、不重编码）。
+ * 压缩分支包装为 File（沿用原文件名换 .jpg 后缀）——FormData 上传需要文件名。
+ */
 export async function compress(blob: Blob, opts: CompressOptions = {}): Promise<Blob> {
   const { maxEdge = 2000, quality = 0.85 } = opts
   const img = await loadImage(await blobToDataUrl(blob))
@@ -71,5 +74,7 @@ export async function compress(blob: Blob, opts: CompressOptions = {}): Promise<
   ctx.fillStyle = '#ffffff'
   ctx.fillRect(0, 0, width, height)
   ctx.drawImage(img, 0, 0, width, height)
-  return canvasToBlob(canvas, 'image/jpeg', quality)
+  const out = await canvasToBlob(canvas, 'image/jpeg', quality)
+  const base = (blob instanceof File ? blob.name : 'image').replace(/\.[^.]+$/, '')
+  return new File([out], `${base}.jpg`, { type: 'image/jpeg' })
 }
