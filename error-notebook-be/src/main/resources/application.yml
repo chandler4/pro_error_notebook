@@ -17,7 +17,7 @@ spring:
       schema-locations: classpath:schema.sql
   servlet:
     multipart:
-      max-file-size: 10MB # 单张上限（41002）
+      max-file-size: 21MB # 备份导入单文件 ≤20MB（43001 超限拒绝）；图片 10MB 由存储服务校验（41002）
       max-request-size: 70MB # 6 张 + 余量（41003）
 
 mybatis-plus:
@@ -30,6 +30,14 @@ mybatis-plus:
 app:
   ai:
     base-url: ${ERRNOTE_BE_AI_BASE_URL:http://127.0.0.1:8081}
+
+# Feign 超时（架构 §5.7：连接 5s / 读取 90s，模型长响应；前端超时 120s > 90s 兜底）
+feign:
+  client:
+    config:
+      default:
+        connect-timeout: 5000
+        read-timeout: 90000
 
 # 图片/数据目录（相对运行目录；备份单元=data/ 整体拷贝）
 data:

@@ -1,0 +1,21 @@
+{
+  "errorQuestionId": "3f8a2c1e-6b7d-4e29-9c1f-8d2e7a4b5c60",
+  "subject": "physics",
+  "gradeLevel": "grade9",
+  "questionType": "fillBlank",
+  "questionStem": "在探究\"串联电路电压规律\"的实验中，R₁、R₂串联，V₁测R₁、V₂测R₂，闭合开关后两电压表指针偏转角度相同（如图）。则电源电压为 ______ V；R₁与R₂的阻值之比为 ______ 。",
+  "questionImages": [
+    { "url": "images/202611/a1b2c3d4.jpg", "role": "QUESTION" },
+    { "url": "images/202611/e5f6a7b8.jpg", "role": "ANSWER_SHEET" }
+  ],
+  "sourceName": "2026—2027 学年度上学期九年级物理学科素养调研",
+  "questionNumber": "14",
+  "standardAnswer": ["12", "1:5"],
+  "knowledgePoints": ["电压表读数", "串联电路分压规律"],
+  "tags": ["二刷", "易错"],
+  "knowledgeAnalysis": "**步骤1** 偏转角相同时，大量程读数是小量程的5倍……$U = U_1 + U_2 = 12\\,\\mathrm{V}$ ……（完整推导+易错点）",
+  "wrongDate": "2026-11-10",
+  "status": "CONFIRMED",
+  "createdAt": "2026-11-10T09:00:00",
+  "updatedAt": "2026-11-12T08:00:00"
+}

@@ -1,0 +1,10 @@
+# 测试 profile（B-11 全量接口测试同用）：H2 内存库，不触碰 ./data 文件库
+spring:
+  datasource:
+    url: jdbc:h2:mem:errnote-test;DB_CLOSE_DELAY=-1
+    username: sa
+    password: ''
+
+# 测试期文件目录指向 target，避免污染仓库工作目录
+data:
+  dir: ./target/test-data

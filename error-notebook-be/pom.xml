@@ -23,6 +23,9 @@
     <mybatis-plus.version>3.5.3.2</mybatis-plus.version>
     <springdoc.version>1.7.0</springdoc.version>
     <spring-cloud.version>2021.0.9</spring-cloud.version>
+    <commonmark.version>0.21.0</commonmark.version>
+    <openhtmltopdf.version>1.0.10</openhtmltopdf.version>
+    <jsoup.version>1.15.4</jsoup.version>
     <spotless.version>2.30.0</spotless.version>
     <checkstyle.plugin.version>3.3.1</checkstyle.plugin.version>
     <spotbugs.plugin.version>4.8.3.1</spotbugs.plugin.version>
@@ -64,6 +67,22 @@
       <groupId>org.springdoc</groupId>
       <artifactId>springdoc-openapi-ui</artifactId>
       <version>${springdoc.version}</version>
+    </dependency>
+    <!-- 导出链路（B-8，tasks.md 评审通过）：commonmark → jsoup(XHTML) → openhtmltopdf -->
+    <dependency>
+      <groupId>org.commonmark</groupId>
+      <artifactId>commonmark</artifactId>
+      <version>${commonmark.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.openhtmltopdf</groupId>
+      <artifactId>openhtmltopdf-pdfbox</artifactId>
+      <version>${openhtmltopdf.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jsoup</groupId>
+      <artifactId>jsoup</artifactId>
+      <version>${jsoup.version}</version>
     </dependency>
     <!-- Lombok（2026-11-11 16:13 决策：provided，不入运行包） -->
     <dependency>
@@ -159,7 +178,7 @@
             <exclude>com/errnote/config/**</exclude>
           </excludes>
           <rules>
-            <!-- test-strategy §6：总行覆盖 ≥70%（核心包 ≥85% 随 B/A workstream 任务补入）；CLI/execution 均生效 -->
+            <!-- test-strategy §6：总行覆盖 ≥70%；核心业务包 service.impl ≥85%（随 B-4 启用）；CLI/execution 均生效 -->
             <rule>
               <element>BUNDLE</element>
               <limits>
@@ -167,6 +186,17 @@
                   <counter>LINE</counter>
                   <value>COVEREDRATIO</value>
                   <minimum>0.70</minimum>
+                </limit>
+              </limits>
+            </rule>
+            <rule>
+              <element>PACKAGE</element>
+              <includes>com.errnote.service.impl</includes>
+              <limits>
+                <limit>
+                  <counter>LINE</counter>
+                  <value>COVEREDRATIO</value>
+                  <minimum>0.85</minimum>
                 </limit>
               </limits>
             </rule>
