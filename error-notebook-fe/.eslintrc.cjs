@@ -20,8 +20,9 @@ module.exports = {
     extraFileExtensions: ['.vue'],
   },
   rules: {
-    // v-html 仅限 DOMPurify 消毒封装（security.md §4）；F-1 工具落地后收紧为 error + 白名单封装
-    'vue/no-v-html': 'warn',
+    // v-html 全局禁止（security.md §4）：唯一出口为 components/HtmlView.vue（输入必须经
+    // utils/markdown.ts renderMarkdown 的 DOMPurify 消毒），该文件内以 disable-next-line 豁免
+    'vue/no-v-html': 'error',
     'vue/multi-word-component-names': ['error', { ignores: ['App'] }],
     '@typescript-eslint/no-explicit-any': 'warn',
   },

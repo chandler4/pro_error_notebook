@@ -13,6 +13,15 @@ export default defineConfig({
   },
   test: {
     environment: 'jsdom',
+    // resources usable：jsdom 默认 NoOpResourceLoader 会让 Image 的 dataURL 加载
+    // 既不触发 load 也不触发 error（Promise 永久悬挂）；启用真 loader 后 data: URL
+    // 由 node-canvas 解码并派发 load 事件（image.ts 压缩链路依赖此行为）
+    environmentOptions: {
+      jsdom: {
+        resources: 'usable',
+      },
+    },
     include: ['src/**/*.{spec,test}.ts'],
+    setupFiles: ['vitest.setup.ts'],
   },
 })
