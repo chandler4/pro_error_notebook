@@ -2,7 +2,7 @@
 
 | 项 | 内容 |
 |---|---|
-| 文档版本 | v1.4 |
+| 文档版本 | v1.5 |
 | 日期 | 2026-11-12 |
 | 作者 | chandler（决策评审）、AI 助手（起草） |
 | 状态 | ✅ 已评审通过（评审人：chandler，2026-11-11） |
@@ -17,6 +17,8 @@
 **v1.3 扩展（2026-11-11 17:24，chandler）**：架构变更 v3.0（AI 独立服务）——新增**第 7 章内部契约**（BE↔AI 业务语义接口）。
 
 **v1.4 扩展（2026-11-12，chandler）**：review 补缺——① 3.8 新增 `POST /api/v1/questions/drafts` 创建空草稿（FR-A4「转手动填写」入口，零 AI 调用，关闭 TC-P-07 契约缺口）；② 3.3 补编辑模式重新解析语义（确认成功后前端联动删除旧记录）。
+
+**v1.5 扩展（2026-11-12，chandler）**：3.11 补 `meta/knowledge-points` 响应形状 `data: [{name, useCount}]`（F workstream 实现中发现形状未定义，落档修正；B-10 实现对齐）。
 
 ---
 
@@ -149,7 +151,7 @@
 | 方法路径 | 说明 |
 |---|---|
 | GET `/api/v1/meta/enums` | `{subjects, gradeLevels, questionTypes, subjectTabs}`（yml 配置化） |
-| GET `/api/v1/meta/knowledge-points?keyword=&limit=10` | 归并候选（字典表，use_count 降序，keyword 前缀/包含匹配） |
+| GET `/api/v1/meta/knowledge-points?keyword=&limit=10` | 归并候选（字典表，keyword 前缀/包含匹配，use_count 降序）；响应 data：`[{name, useCount}]`（camelCase，空匹配返回 `[]`） |
 
 ### 3.12 GET `/api/v1/logs` — 业务日志查询（「运行日志」页数据源，2026-11-11 追加）
 
