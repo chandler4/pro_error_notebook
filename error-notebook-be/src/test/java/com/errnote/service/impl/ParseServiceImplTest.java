@@ -121,11 +121,16 @@ class ParseServiceImplTest {
             org.mockito.ArgumentMatchers.eq(RAW));
   }
 
-  // TC-P-02（BE 侧）：AI 业务失败 42001 原样透传，不入库；W-1 修复后失败留痕 AI_CALL
+  // TC-P-02（BE 侧）：AI 业务失败 42001 原样透传，不入库；W-1 修复后失败留痕 AI_CALL；
+  // W-4（2026-11-13）：错误信封 data.model 随失败条目留痕
   @Test
   void aiBusinessError42001PassesThroughAndLogsFailure() {
     when(aiServiceClient.parse(any(AiParseRequest.class)))
-        .thenReturn(ApiResponse.error(42001, "AI 解析失败：模型输出无效（已重试 1 次）"));
+        .thenReturn(
+            ApiResponse.error(
+                42001,
+                "AI 解析失败：模型输出无效（已重试 1 次）",
+                AiParseResponse.builder().model("glm-5.3-flash").build()));
 
     assertThatThrownBy(() -> service.parse(images))
         .isInstanceOf(BusinessException.class)
@@ -134,18 +139,23 @@ class ParseServiceImplTest {
     verifyNoInteractions(wrongQuestionMapper);
     verify(businessLogService)
         .recordAiFailure(
-            anyString(),
+            org.mockito.ArgumentMatchers.eq("glm-5.3-flash"),
             anyLong(),
             contains("images=2"),
             org.mockito.ArgumentMatchers.eq(42001),
             contains("模型输出无效"));
   }
 
-  // W-2（2026-11-12 chandler 确认）：AI 侧 40000 参数错误（如图片 url 失效）原样透传，message 带定位
+  // W-2（2026-11-12 chandler 确认）：AI 侧 40000 参数错误（如图片 url 失效）原样透传，message 带定位；
+  // W-4：model 同样带出（信封 data.model）
   @Test
   void aiParamError40000PassesThroughWithDetail() {
     when(aiServiceClient.parse(any(AiParseRequest.class)))
-        .thenReturn(ApiResponse.error(40000, "images: 图片拉取失败 images/202611/missing.jpg"));
+        .thenReturn(
+            ApiResponse.error(
+                40000,
+                "images: 图片拉取失败 images/202611/missing.jpg",
+                AiParseResponse.builder().model("glm-5.3-flash").build()));
 
     assertThatThrownBy(() -> service.parse(images))
         .isInstanceOf(BusinessException.class)
@@ -154,7 +164,7 @@ class ParseServiceImplTest {
     verifyNoInteractions(wrongQuestionMapper);
     verify(businessLogService)
         .recordAiFailure(
-            anyString(),
+            org.mockito.ArgumentMatchers.eq("glm-5.3-flash"),
             anyLong(),
             anyString(),
             org.mockito.ArgumentMatchers.eq(40000),
@@ -192,10 +202,11 @@ class ParseServiceImplTest {
         .extracting("code", "message")
         .containsExactly(42002, "AI 服务不可达");
     verifyNoInteractions(wrongQuestionMapper);
-    // W-1/BR-01：失败留痕 AI_CALL，且 message 为脱敏文案（不携带 Connection refused 等底层细节）
+    // W-1/BR-01：失败留痕 AI_CALL，且 message 为脱敏文案（不携带 Connection refused 等底层细节）；
+    // W-4：传输层失败 AI 从未响应，model 无从获知，留空落日志
     verify(businessLogService)
         .recordAiFailure(
-            anyString(),
+            org.mockito.ArgumentMatchers.eq(""),
             anyLong(),
             anyString(),
             org.mockito.ArgumentMatchers.eq(42002),

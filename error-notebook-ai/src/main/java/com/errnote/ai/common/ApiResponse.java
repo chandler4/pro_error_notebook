@@ -25,4 +25,12 @@ public class ApiResponse<T> {
   public static <T> ApiResponse<T> error(int code, String message) {
     return new ApiResponse<>(code, message, null);
   }
+
+  /**
+   * 错误信封携带部分 data（W-4，2026-11-13 chandler 确认）：仅 model 字段，供 BE 失败留痕；
+   * draft/rawModelResponse/durationMs 在错误路径不携带。
+   */
+  public static <T> ApiResponse<T> error(int code, String message, T data) {
+    return new ApiResponse<>(code, message, data);
+  }
 }

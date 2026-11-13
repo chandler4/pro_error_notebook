@@ -2,8 +2,8 @@
 
 | 项 | 内容 |
 |---|---|
-| 文档版本 | v1.6 |
-| 日期 | 2026-11-12 |
+| 文档版本 | v1.7 |
+| 日期 | 2026-11-13 |
 | 作者 | chandler（决策评审）、AI 助手（起草） |
 | 状态 | ✅ 已评审通过（评审人：chandler，2026-11-11） |
 | 关联文档 | [architecture.md](architecture.md)、[architecture-data.md](architecture-data.md)、[security.md](security.md)、[communication-log.md](communication-log.md) |
@@ -21,6 +21,8 @@
 **v1.5 扩展（2026-11-12，chandler）**：3.11 补 `meta/knowledge-points` 响应形状 `data: [{name, useCount}]`（F workstream 实现中发现形状未定义，落档修正；B-10 实现对齐）。
 
 **v1.6 扩展（2026-11-12，chandler）**：三路实现侧契约决策落档——① 3.5 默认排序 `wrongDate DESC, createdAt DESC`；② 备份导入 >20MB → 43001（TC-S-04 补码）、overwrite 模式知识点「旧减计+新累积」语义；③ 7.1 内部端点补 40000 参数校验码并明示「错误路径恒 HTTP 200、调用方判 code」；④ 40000 场景补坏 JSON 请求体兜底；⑤ 7.1 示例 model 更正为 glm-5.3-flash。
+
+**v1.7 扩展（2026-11-13，chandler）**：T9-1 走查发现 W-4 修复——§7.1 错误信封 `data` 恒为 `{"model": "<配置模型名>"}`（仅此一字段，draft/raw/duration 错误路径不携带），供 BE 失败条目 business_log 留痕；BE 传输层失败（AI 整体不可达）时 BE 无从获知 model，留空。
 
 ---
 
@@ -218,6 +220,6 @@ request<T>(method, url, { json?, form?, timeout? = 30000 }): Promise<T>
 }
 ```
 
-- 错误码：42001（输出非法，已重试 1 次）/ 42002（模型不可达/超时）/ 40000（请求参数校验失败，如空 images，message 含字段明细——v1.6 落档）；**所有错误路径均 HTTP 200**，调用方必须解包判 `code`。
+- 错误码：42001（输出非法，已重试 1 次）/ 42002（模型不可达/超时）/ 40000（请求参数校验失败，如空 images，message 含字段明细——v1.6 落档）；**所有错误路径均 HTTP 200**，调用方必须解包判 `code`。错误信封 `data` 恒为 `{"model": "<配置模型名>"}`（v1.7/W-4：供 BE 失败留痕；仅此一字段，draft/rawModelResponse/durationMs 错误路径不携带；BE 自身传输层失败时无从获知，留空）。
 - 约定：`draft.tags` 恒为空数组（BR-11：标签纯手工标注）；`rawModelResponse` 供 BE 落 `business_log`（BR-09/TC-G-03），AI 服务自身**不持久化**任何数据；图片由 BE 侧文件存储提供访问（AI 服务按 URL 拉取或由 BE 传内容，实现取其一并在 A-2 任务固化——默认 AI 服务回环直接读 BE 静态 `/files/**`）。
 - 变更：内部契约变更同样走第 6 章流程，并同步 [architecture.md](architecture.md) §5.2。

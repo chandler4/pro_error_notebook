@@ -34,13 +34,15 @@
 
 **附带实证**：A-5 遗留风险「Coding Plan 套餐 key 自研后端调用额度归属」——真调成功 ×2，风险关闭。
 
-## 2. 走查发现（待 chandler 决策）
+## 2. 走查发现与处置（2026-11-13 chandler 决策）
 
-| # | 级别 | 内容 | 建议 |
+| # | 级别 | 内容 | 处置（chandler 确认） |
 |---|---|---|---|
-| W-3 | 中 | `/demo` T0-2 演示页「调用解析」按钮指向 `/api/v1/demo/parse`，BE DemoController 已随 B-4 删除 → 死链 404（enums 按钮仍可用） | T9-3 打包前移除演示页路由+页面（T0-2 历史使命已完成，联通结论已留痕 communication-log） |
-| W-4 | 低 | AI_CALL 失败条目 `action="AI解析 model="` 型号名为空（成功条目正常带 model） | 失败路径 action 补 model 或接受现状 |
-| 观察 | 待判 | 真调下 AI 草稿 `standardAnswer`/`knowledgeAnalysis` 常为空（答案纸学生解答未映射到标准答案；解析未生成）——分项确认本就允许人工补全 | 可接受则留档；若期望 AI 生成则调 Prompt（A-4 模板）后续迭代 |
+| W-1 | — | （昨日）失败 AI 调用未落 AI_CALL 日志 | 已修复（87e9a3d），本次回归 ✓ |
+| W-2 | — | （昨日）取图失败未映射 40000+url 明细 | 已修复（b8ccd10），本次回归 ✓ |
+| W-3 | 中 | `/demo` T0-2 演示页「调用解析」按钮指向 `/api/v1/demo/parse`，BE DemoController 已随 B-4 删除 → 死链 404（enums 按钮仍可用） | **T9-3 打包前移除演示页路由+页面**（已补入 tasks.md T9-3） |
+| W-4 | 低 | AI_CALL 失败条目 `action="AI解析 model="` 型号名为空 | **已修复**：内部契约 v1.7 错误信封 `data={"model"}`，BE 失败留痕携带（BE 传输层失败无从获知仍留空）；AI 26 测试 / BE 101 测试全绿，修复后真机复验 ✓（见 §1 第 12/13 项与 §5 复验记录） |
+| 观察 | 低 | 真调下 AI 草稿 `standardAnswer`/`knowledgeAnalysis` 常为空（答案纸学生解答未映射到标准答案；解析未生成）——分项确认本就允许人工补全 | **v1 接受不调 Prompt**，留档后续迭代项 |
 
 ## 3. 浏览器侧走查项（待 chandler 确认，三服务已保持运行）
 
@@ -55,3 +57,7 @@
 ## 4. 浏览器不可代验项归属
 
 - PDF 中文字体视觉、浏览器兼容（Chrome/Edge）、灾备演练 → T9-3（tasks.md 既定归属）
+
+## 5. W-4 修复后真机复验（2026-11-13，修复提交后）
+
+- 重启 AI+BE 新代码后，重放坏图 URL 解析（40000 路径）→ `GET /api/v1/logs?logType=AI_CALL&success=false` 失败条目 `action="AI解析 model=glm-5.3-flash"` ✓（复验细节以 communication-log 当日记录为准）

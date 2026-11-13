@@ -55,9 +55,14 @@ public class ParseServiceImpl implements ParseService {
       return entity;
     } catch (BusinessException e) {
       // W-1（2026-11-12 chandler 确认）：AI 调用失败同样留痕 AI_CALL（success=false+错误码），
-      // 运行日志页「AI 调用+失败」可追溯；参数校验 40000 在 Controller 层拦截，不进入此路径
+      // 运行日志页「AI 调用+失败」可追溯；参数校验 40000 在 Controller 层拦截，不进入此路径。
+      // W-4（2026-11-13 chandler 确认）：AI 已响应时失败条目同样携带 model（信封 data.model）
       businessLogService.recordAiFailure(
-          "", clock.millis() - start, "parse images=" + images.size(), e.getCode(), e.getMessage());
+          e.getModel() == null ? "" : e.getModel(),
+          clock.millis() - start,
+          "parse images=" + images.size(),
+          e.getCode(),
+          e.getMessage());
       throw e;
     }
   }
@@ -80,14 +85,16 @@ public class ParseServiceImpl implements ParseService {
       throw new BusinessException(ErrorCode.AI_PARSE_FAILED);
     }
     if (response.getCode() != 0) {
-      // AI 业务错误透传：42002/40000 保留语义（W-2：图片 url 失效等参数错误带明细直达前端），其余（含未知码）归并 42001
+      // AI 业务错误透传：42002/40000 保留语义（W-2：图片 url 失效等参数错误带明细直达前端），其余（含未知码）归并 42001；
+      // W-4：信封 data.model（若有）随异常带出供失败留痕
+      String model = envelopeModel(response);
       if (response.getCode() == ErrorCode.AI_UNAVAILABLE.getCode()) {
-        throw new BusinessException(ErrorCode.AI_UNAVAILABLE, response.getMessage());
+        throw new BusinessException(ErrorCode.AI_UNAVAILABLE, response.getMessage(), model);
       }
       if (response.getCode() == ErrorCode.PARAM_INVALID.getCode()) {
-        throw new BusinessException(ErrorCode.PARAM_INVALID, response.getMessage());
+        throw new BusinessException(ErrorCode.PARAM_INVALID, response.getMessage(), model);
       }
-      throw new BusinessException(ErrorCode.AI_PARSE_FAILED, response.getMessage());
+      throw new BusinessException(ErrorCode.AI_PARSE_FAILED, response.getMessage(), model);
     }
     AiParseResponse data = response.getData();
     if (data == null || data.getDraft() == null) {
@@ -95,6 +102,14 @@ public class ParseServiceImpl implements ParseService {
       throw new BusinessException(ErrorCode.AI_PARSE_FAILED, response.getMessage());
     }
     return data;
+  }
+
+  /** W-4：从错误信封 data 提取 model（AI 已响应时携带；data/model 缺失返回 null，调用方留空落日志）。 */
+  private String envelopeModel(ApiResponse<AiParseResponse> response) {
+    if (response.getData() == null || response.getData().getModel() == null) {
+      return null;
+    }
+    return response.getData().getModel();
   }
 
   private WrongQuestion toPendingDraft(WrongQuestionDraftDto draft, List<ImageRef> images) {

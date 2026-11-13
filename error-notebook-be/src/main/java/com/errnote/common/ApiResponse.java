@@ -25,4 +25,9 @@ public class ApiResponse<T> {
   public static <T> ApiResponse<T> error(int code, String message) {
     return new ApiResponse<>(code, message, null);
   }
+
+  /** 错误信封携带部分 data：内部契约（§7.1 W-4）失败响应 data 含 model，供调用方失败留痕。 */
+  public static <T> ApiResponse<T> error(int code, String message, T data) {
+    return new ApiResponse<>(code, message, data);
+  }
 }
