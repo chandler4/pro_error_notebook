@@ -29,7 +29,13 @@
       "Bash(tasklist //FI \"IMAGENAME eq java.exe\")",
       "Bash(netstat -ano)",
       "Bash(taskkill //F //PID 18208 //PID 26720)",
-      "Bash(wmic process *)"
+      "Bash(wmic process *)",
+      "Bash(git -C d:/vs_workspace/errnote-ws-a status --short)",
+      "Bash(git -C d:/vs_workspace/errnote-ws-b status --short)",
+      "Bash(git -C d:/vs_workspace/errnote-ws-f status --short)",
+      "Read(//d/vs_workspace/errnote-ws-f/error-notebook-fe/node_modules/**)",
+      "Read(//d/vs_workspace/errnote-ws-f/error-notebook-fe/**)",
+      "Bash(node -e \"console.log\\('cropperjs', require\\('./node_modules/cropperjs/package.json'\\).version\\)\")"
     ]
   }
 }
