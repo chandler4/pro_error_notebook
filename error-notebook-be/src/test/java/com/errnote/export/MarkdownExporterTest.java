@@ -79,6 +79,19 @@ class MarkdownExporterTest {
     assertThat(md).contains("![ANSWER_SHEET](/files/images/202611/e5f6a7b8.jpg)");
   }
 
+  // W-9（chandler 确认 base64 内嵌）：解析器返回 data URL 时嵌入；null 回退 /files/ 相对路径
+  @Test
+  void imageResolverEmbedsDataUrlWithFallback() throws Exception {
+    String md =
+        exporter.render(
+            Collections.singletonList(sample()),
+            Mode.FULL,
+            url -> url.endsWith("a1b2c3d4.jpg") ? "data:image/jpeg;base64,QUJD" : null);
+
+    assertThat(md).contains("![QUESTION](data:image/jpeg;base64,QUJD)");
+    assertThat(md).contains("![ANSWER_SHEET](/files/images/202611/e5f6a7b8.jpg)");
+  }
+
   // 空结果导出提示（边界）
   @Test
   void emptyListRendersPlaceholder() {

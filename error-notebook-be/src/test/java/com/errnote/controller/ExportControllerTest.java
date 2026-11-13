@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.errnote.dto.ImageRef;
 import com.errnote.dto.QuestionDetail;
+import com.errnote.integration.storage.FileStorageService;
 import com.errnote.service.QuestionService;
 import java.time.LocalDate;
 import java.util.Arrays;
@@ -18,17 +19,24 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 /** 导出接口测试（TC-E-03：Content-Type / Content-Disposition / 文件流字节）。 */
 @WebMvcTest(ExportController.class)
-@Import({com.errnote.export.MarkdownExporter.class, com.errnote.export.PdfExporter.class})
+@Import({
+  com.errnote.export.MarkdownExporter.class,
+  com.errnote.export.PdfExporter.class,
+  com.errnote.export.ExportImageEmbedder.class
+})
 class ExportControllerTest {
 
   @Autowired private MockMvc mockMvc;
 
   @MockBean private QuestionService questionService;
+
+  @MockBean private FileStorageService fileStorageService;
 
   private static QuestionDetail sample() {
     return QuestionDetail.builder()
@@ -47,6 +55,9 @@ class ExportControllerTest {
   @Test
   void markdownExportStreamsTextMarkdownAttachment() throws Exception {
     given(questionService.listAll(any())).willReturn(Collections.singletonList(sample()));
+    // W-9：存储图片读出并 base64 内嵌（byte[] {1,2,3} → AQID）
+    given(fileStorageService.read("images/202611/a1b2.jpg"))
+        .willReturn(new ByteArrayResource(new byte[] {1, 2, 3}));
 
     MvcResult result =
         mockMvc
@@ -64,6 +75,7 @@ class ExportControllerTest {
     String body = result.getResponse().getContentAsString();
     assertThat(body).contains("# 错题本");
     assertThat(body).contains("串联电路实验题干");
+    assertThat(body).contains("![QUESTION](data:image/jpeg;base64,AQID)");
   }
 
   @Test

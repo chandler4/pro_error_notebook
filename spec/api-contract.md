@@ -2,7 +2,7 @@
 
 | 项 | 内容 |
 |---|---|
-| 文档版本 | v1.7 |
+| 文档版本 | v1.8 |
 | 日期 | 2026-11-13 |
 | 作者 | chandler（决策评审）、AI 助手（起草） |
 | 状态 | ✅ 已评审通过（评审人：chandler，2026-11-11） |
@@ -23,6 +23,8 @@
 **v1.6 扩展（2026-11-12，chandler）**：三路实现侧契约决策落档——① 3.5 默认排序 `wrongDate DESC, createdAt DESC`；② 备份导入 >20MB → 43001（TC-S-04 补码）、overwrite 模式知识点「旧减计+新累积」语义；③ 7.1 内部端点补 40000 参数校验码并明示「错误路径恒 HTTP 200、调用方判 code」；④ 40000 场景补坏 JSON 请求体兜底；⑤ 7.1 示例 model 更正为 glm-5.3-flash。
 
 **v1.7 扩展（2026-11-13，chandler）**：T9-1 走查发现 W-4 修复——§7.1 错误信封 `data` 恒为 `{"model": "<配置模型名>"}`（仅此一字段，draft/raw/duration 错误路径不携带），供 BE 失败条目 business_log 留痕；BE 传输层失败（AI 整体不可达）时 BE 无从获知 model，留空。
+
+**v1.8 扩展（2026-11-13，chandler）**：T9-1 走查发现 W-9 修复——3.9 导出的 Markdown/PDF **图片以 base64 data URL 内嵌**（单文件离线自包含；存储读取失败/未知扩展名自动回退 `/files/` 服务相对路径，不阻断导出）。
 
 ---
 
@@ -142,7 +144,7 @@
 ### 3.9 GET `/api/v1/questions/export` — 导出
 
 - 查询参数：`format=markdown|pdf`、`rework=true|false`（PDF 重做模式）+ 3.5 全部筛选参数
-- 响应：文件流（`Content-Type: text/markdown` / `application/pdf`，`Content-Disposition` 附件）
+- 响应：文件流（`Content-Type: text/markdown` / `application/pdf`，`Content-Disposition` 附件）；**图片以 base64 data URL 内嵌于文档**（v1.8/W-9：离线自包含；读取失败回退 `/files/` 相对路径）
 
 ### 3.10 备份迁移
 

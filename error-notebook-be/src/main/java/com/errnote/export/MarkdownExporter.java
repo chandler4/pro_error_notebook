@@ -3,12 +3,16 @@ package com.errnote.export;
 import com.errnote.dto.ImageRef;
 import com.errnote.dto.QuestionDetail;
 import java.util.List;
+import java.util.function.Function;
 import org.springframework.stereotype.Component;
 
 /**
  * Markdown 导出模板（FR-B4 / TC-E-01 golden 基线）。
  *
  * <p>重做模式（TC-E-02）：正文仅题目与元信息，答案与解析整体移至文末「答案页」。
+ *
+ * <p>图片内嵌（W-9，2026-11-13 chandler 确认）：解析器返回 base64 data URL 时嵌入导出文本（离线自包含， PDF 同源受益）；返回 null
+ * 回退服务相对路径 /files/。
  */
 @Component
 public class MarkdownExporter {
@@ -20,6 +24,12 @@ public class MarkdownExporter {
   }
 
   public String render(List<QuestionDetail> questions, Mode mode) {
+    return render(questions, mode, url -> null);
+  }
+
+  /** @param imageUrlResolver 图片 URL 到可嵌入地址（如 base64 data URL）的解析；null 回退 /files/ 相对路径。 */
+  public String render(
+      List<QuestionDetail> questions, Mode mode, Function<String, String> imageUrlResolver) {
     StringBuilder md = new StringBuilder();
     md.append("# 错题本\n\n");
     if (questions.isEmpty()) {
@@ -28,7 +38,7 @@ public class MarkdownExporter {
     }
     int index = 1;
     for (QuestionDetail q : questions) {
-      renderQuestion(md, index++, q, mode == Mode.REWORK);
+      renderQuestion(md, index++, q, mode == Mode.REWORK, imageUrlResolver);
       md.append("\n---\n\n");
     }
     if (mode == Mode.REWORK) {
@@ -41,7 +51,12 @@ public class MarkdownExporter {
     return md.toString();
   }
 
-  private void renderQuestion(StringBuilder md, int index, QuestionDetail q, boolean rework) {
+  private void renderQuestion(
+      StringBuilder md,
+      int index,
+      QuestionDetail q,
+      boolean rework,
+      Function<String, String> imageUrlResolver) {
     md.append("## ")
         .append(index)
         .append(". ")
@@ -59,11 +74,11 @@ public class MarkdownExporter {
     md.append("- 标签：").append(join(q.getTags())).append("\n\n");
     if (q.getQuestionImages() != null && !q.getQuestionImages().isEmpty()) {
       for (ImageRef image : q.getQuestionImages()) {
+        String resolved = imageUrlResolver.apply(image.getUrl());
         md.append("![")
             .append(image.getRole())
             .append("](")
-            .append("/files/")
-            .append(image.getUrl())
+            .append(resolved != null ? resolved : "/files/" + image.getUrl())
             .append(")\n");
       }
       md.append("\n");

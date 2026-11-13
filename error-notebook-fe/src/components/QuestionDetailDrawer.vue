@@ -16,6 +16,11 @@ const emit = defineEmits<{ (e: 'update:modelValue', v: boolean): void }>()
 const roleLabel: Record<string, string> = { QUESTION: '题目图', ANSWER_SHEET: '解答图' }
 
 const analysisHtml = computed(() => renderMarkdown(props.question?.knowledgeAnalysis ?? ''))
+
+/** W-10（chandler 走查）：原题图片点击放大——el-image 内建预览（多图可翻页）。 */
+const previewList = computed(() =>
+  (props.question?.questionImages ?? []).map((img) => fileUrl(img.url)),
+)
 </script>
 
 <template>
@@ -30,7 +35,15 @@ const analysisHtml = computed(() => renderMarkdown(props.question?.knowledgeAnal
       <div v-if="question.questionImages?.length" class="img-row">
         <div v-for="(img, i) in question.questionImages" :key="i" class="img-cell">
           <span class="role-badge" :class="img.role">{{ roleLabel[img.role] ?? img.role }}</span>
-          <img :src="fileUrl(img.url)" :alt="`错题图片${i + 1}`" />
+          <el-image
+            :src="fileUrl(img.url)"
+            :alt="`错题图片${i + 1}`"
+            fit="cover"
+            class="thumb"
+            :preview-src-list="previewList"
+            :initial-index="i"
+            preview-teleported
+          />
         </div>
       </div>
 
@@ -46,7 +59,9 @@ const analysisHtml = computed(() => renderMarkdown(props.question?.knowledgeAnal
 
       <h3 class="sec">知识点 / 标签</h3>
       <div class="tags">
-        <el-tag v-for="kp in question.knowledgePoints ?? []" :key="kp" size="small">{{ kp }}</el-tag>
+        <el-tag v-for="kp in question.knowledgePoints ?? []" :key="kp" size="small">{{
+          kp
+        }}</el-tag>
         <span v-for="t in question.tags ?? []" :key="t" class="free-tag">{{ t }}</span>
       </div>
 
@@ -61,8 +76,12 @@ const analysisHtml = computed(() => renderMarkdown(props.question?.knowledgeAnal
         <el-descriptions-item label="年级">{{ question.gradeLevel || '—' }}</el-descriptions-item>
         <el-descriptions-item label="题型">{{ question.questionType || '—' }}</el-descriptions-item>
         <el-descriptions-item label="来源">{{ question.sourceName || '—' }}</el-descriptions-item>
-        <el-descriptions-item label="题号">{{ question.questionNumber || '—' }}</el-descriptions-item>
-        <el-descriptions-item label="错题日期">{{ question.wrongDate || '—' }}</el-descriptions-item>
+        <el-descriptions-item label="题号">{{
+          question.questionNumber || '—'
+        }}</el-descriptions-item>
+        <el-descriptions-item label="错题日期">{{
+          question.wrongDate || '—'
+        }}</el-descriptions-item>
       </el-descriptions>
     </div>
     <el-empty v-else description="加载中……" />
@@ -95,11 +114,14 @@ const analysisHtml = computed(() => renderMarkdown(props.question?.knowledgeAnal
   position: relative;
   flex: 0 0 auto;
 }
-.img-cell img {
+/* W-10：缩略图可点击放大（el-image 内建预览，光标提示） */
+.img-cell :deep(.thumb),
+.img-cell :deep(img) {
   height: 140px;
   border-radius: 4px;
   border: 1px solid var(--el-border-color-light);
   display: block;
+  cursor: zoom-in;
 }
 .role-badge {
   position: absolute;

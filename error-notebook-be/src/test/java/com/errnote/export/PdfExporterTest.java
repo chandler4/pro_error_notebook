@@ -26,4 +26,16 @@ class PdfExporterTest {
 
     assertThat(new String(pdf, 0, 4, java.nio.charset.StandardCharsets.US_ASCII)).isEqualTo("%PDF");
   }
+
+  // W-9：MD 内嵌 base64 data URL 图片（1x1 PNG）——openhtmltopdf 渲染不报错仍出有效 PDF
+  @Test
+  void dataUrlImageRendersIntoPdf() {
+    String png1x1 =
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
+    String md = "# 错题本\n\n![QUESTION](data:image/png;base64," + png1x1 + ")\n";
+
+    byte[] pdf = exporter.renderPdf(md);
+
+    assertThat(new String(pdf, 0, 4, java.nio.charset.StandardCharsets.US_ASCII)).isEqualTo("%PDF");
+  }
 }

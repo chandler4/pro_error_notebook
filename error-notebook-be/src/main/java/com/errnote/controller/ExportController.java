@@ -2,6 +2,7 @@ package com.errnote.controller;
 
 import com.errnote.dto.QuestionDetail;
 import com.errnote.dto.QuestionQuery;
+import com.errnote.export.ExportImageEmbedder;
 import com.errnote.export.MarkdownExporter;
 import com.errnote.export.PdfExporter;
 import com.errnote.service.QuestionService;
@@ -28,6 +29,7 @@ public class ExportController {
   private final QuestionService questionService;
   private final MarkdownExporter markdownExporter;
   private final PdfExporter pdfExporter;
+  private final ExportImageEmbedder exportImageEmbedder;
 
   @GetMapping("/export")
   @Operation(summary = "按筛选条件导出 Markdown 或 PDF 文件流")
@@ -38,7 +40,8 @@ public class ExportController {
       throws java.io.UnsupportedEncodingException {
     List<QuestionDetail> questions = questionService.listAll(query);
     MarkdownExporter.Mode mode = rework ? MarkdownExporter.Mode.REWORK : MarkdownExporter.Mode.FULL;
-    String md = markdownExporter.render(questions, mode);
+    // W-9：图片 base64 内嵌（离线自包含；读取失败自动回退 /files/ 相对路径）
+    String md = markdownExporter.render(questions, mode, exportImageEmbedder::toDataUrl);
     byte[] content;
     String filename;
     MediaType contentType;

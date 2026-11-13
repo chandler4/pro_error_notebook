@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { ElImage } from 'element-plus'
 import QuestionDetailDrawer from '../QuestionDetailDrawer.vue'
 import HtmlView from '../HtmlView.vue'
 import type { WrongQuestion } from '../../types'
@@ -42,12 +43,30 @@ describe('QuestionDetailDrawer', () => {
   it('图片横向排列并带角色角标，URL 拼 /files/ 前缀', () => {
     const wrapper = mount(QuestionDetailDrawer, {
       props: { modelValue: true, question },
+      global: { components: { ElImage } },
     })
-    const imgs = wrapper.findAll('img')
-    expect(imgs.length).toBe(2)
-    expect(imgs[0].attributes('src')).toBe('/files/images/202611/a1.jpg')
+    // jsdom 图片不真实加载（ElImage 加载成功才渲染内层 img），按组件 props 断言 src
+    const images = wrapper.findAllComponents(ElImage)
+    expect(images.length).toBe(2)
+    expect(images[0].props('src')).toBe('/files/images/202611/a1.jpg')
     const badges = wrapper.findAll('.role-badge').map((b) => b.text())
     expect(badges).toEqual(['题目图', '解答图'])
+  })
+
+  /** W-10（chandler 走查）：原题图片点击放大——el-image 预览列表含全部图与正确起始索引。 */
+  it('W-10: 图片组件带预览列表（点击放大、多图翻页）', () => {
+    const wrapper = mount(QuestionDetailDrawer, {
+      props: { modelValue: true, question },
+      global: { components: { ElImage } },
+    })
+    const images = wrapper.findAllComponents(ElImage)
+    expect(images.length).toBe(2)
+    expect(images[0].props('previewSrcList')).toEqual([
+      '/files/images/202611/a1.jpg',
+      '/files/images/202611/b1.jpg',
+    ])
+    expect(images[0].props('initialIndex')).toBe(0)
+    expect(images[1].props('initialIndex')).toBe(1)
   })
 
   it('解析经 Markdown+KaTeX 渲染（HtmlView 出口）', () => {
@@ -66,6 +85,8 @@ describe('QuestionDetailDrawer', () => {
       props: { modelValue: true, question },
     })
     const text = wrapper.text()
-    ;['数学', '高一', '选择题', '期中试卷', '12', '2026-11-01'].forEach((s) => expect(text).toContain(s))
+    ;['数学', '高一', '选择题', '期中试卷', '12', '2026-11-01'].forEach((s) =>
+      expect(text).toContain(s),
+    )
   })
 })
