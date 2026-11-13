@@ -179,7 +179,11 @@ onMounted(async () => {
   } catch {
     subjectTabs.value = FALLBACK_TABS
   }
-  activeTab.value = subjectTabs.value[0]
+  // W-8（chandler 走查）：编辑/新增等路由离开再返回（重挂载）保留当前分科 Tab——
+  // Tab 状态以 listStore.filters.subject 为记忆源；无值或已不在 Tab 列表（枚举变更）才回首个
+  const remembered = listStore.filters.subject
+  activeTab.value =
+    remembered && subjectTabs.value.includes(remembered) ? remembered : subjectTabs.value[0]
   listStore.setFilters({ subject: activeTab.value, page: 1 })
   void load()
   void loadDraftsCount()
@@ -192,7 +196,9 @@ onMounted(async () => {
     <template v-if="!draftMode">
       <div class="head-row">
         <h1 class="page-title">错题记录</h1>
-        <el-button link type="warning" @click="toggleDraftMode">待确认 ({{ draftTotal }})</el-button>
+        <el-button link type="warning" @click="toggleDraftMode"
+          >待确认 ({{ draftTotal }})</el-button
+        >
       </div>
 
       <el-tabs :model-value="activeTab" @tab-change="onTabChange">
@@ -230,14 +236,23 @@ onMounted(async () => {
         <el-table-column label="知识点 / 标签" min-width="160">
           <template #default="{ row }">
             <div class="kp-cell">
-              <el-tag v-for="kp in row.knowledgePoints ?? []" :key="kp" size="small" class="kp-tag">{{ kp }}</el-tag>
+              <el-tag
+                v-for="kp in row.knowledgePoints ?? []"
+                :key="kp"
+                size="small"
+                class="kp-tag"
+                >{{ kp }}</el-tag
+              >
               <span v-for="t in row.tags ?? []" :key="t" class="free-tag">{{ t }}</span>
             </div>
           </template>
         </el-table-column>
         <el-table-column label="来源 / 题号" min-width="130">
           <template #default="{ row }">
-            <span>{{ row.sourceName || '—' }} {{ row.questionNumber ? `· ${row.questionNumber}` : '' }}</span>
+            <span
+              >{{ row.sourceName || '—' }}
+              {{ row.questionNumber ? `· ${row.questionNumber}` : '' }}</span
+            >
           </template>
         </el-table-column>
         <el-table-column prop="wrongDate" label="错题日期" width="110" />

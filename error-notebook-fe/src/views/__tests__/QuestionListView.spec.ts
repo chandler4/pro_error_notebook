@@ -6,7 +6,13 @@ import QuestionListView from '../QuestionListView.vue'
 import QuestionDetailDrawer from '../../components/QuestionDetailDrawer.vue'
 import ExportDialog from '../../components/ExportDialog.vue'
 import router from '../../router'
-import { listQuestions, listDrafts, deleteQuestion, deleteDraft, getQuestion } from '../../api/question'
+import {
+  listQuestions,
+  listDrafts,
+  deleteQuestion,
+  deleteDraft,
+  getQuestion,
+} from '../../api/question'
 import { getEnums } from '../../api/meta'
 import type { PageResult, WrongQuestion } from '../../types'
 
@@ -76,7 +82,9 @@ beforeEach(async () => {
     subjectTabs: ['数学', '物理', '化学'],
   })
   mockedList.mockResolvedValue(pageOf([makeRow('q1'), makeRow('q2')]))
-  mockedDrafts.mockResolvedValue(pageOf([makeRow('d1', { status: 'PENDING_CONFIRM', questionStem: '待确认草稿一' })], 1))
+  mockedDrafts.mockResolvedValue(
+    pageOf([makeRow('d1', { status: 'PENDING_CONFIRM', questionStem: '待确认草稿一' })], 1),
+  )
   vi.mocked(getQuestion).mockImplementation(async (id: string) => makeRow(id))
   vi.mocked(ElMessageBox.confirm).mockResolvedValue('confirm' as never)
 })
@@ -95,18 +103,28 @@ describe('QuestionListView 查询/重置（TC-L-06）', () => {
     expect(mockedList).toHaveBeenLastCalledWith(expect.objectContaining({ page: 2 }))
 
     await wrapper.find('input[placeholder="题干关键词"]').setValue('函数')
-    await wrapper.findAll('button').find((b) => b.text() === '查询')!.trigger('click')
+    await wrapper
+      .findAll('button')
+      .find((b) => b.text() === '查询')!
+      .trigger('click')
     await flushPromises()
-    expect(mockedList).toHaveBeenLastCalledWith(expect.objectContaining({ keyword: '函数', page: 1 }))
+    expect(mockedList).toHaveBeenLastCalledWith(
+      expect.objectContaining({ keyword: '函数', page: 1 }),
+    )
 
     // 重置 → 清空条件、回第一页、重新查询
-    await wrapper.findAll('button').find((b) => b.text() === '重置')!.trigger('click')
+    await wrapper
+      .findAll('button')
+      .find((b) => b.text() === '重置')!
+      .trigger('click')
     await flushPromises()
     expect(mockedList).toHaveBeenLastCalledWith(
       expect.not.objectContaining({ keyword: expect.anything() }),
     )
     expect(mockedList).toHaveBeenLastCalledWith(expect.objectContaining({ page: 1 }))
-    expect((wrapper.find('input[placeholder="题干关键词"]').element as HTMLInputElement).value).toBe('')
+    expect(
+      (wrapper.find('input[placeholder="题干关键词"]').element as HTMLInputElement).value,
+    ).toBe('')
   })
 })
 
@@ -118,9 +136,39 @@ describe('QuestionListView 分科 Tab（TC-L-07）', () => {
     const tabs = wrapper.findAll('.el-tabs__item').map((t) => t.text())
     expect(tabs).toEqual(['数学', '物理', '化学'])
 
-    await wrapper.findAll('.el-tabs__item').find((t) => t.text() === '物理')!.trigger('click')
+    await wrapper
+      .findAll('.el-tabs__item')
+      .find((t) => t.text() === '物理')!
+      .trigger('click')
     await flushPromises()
-    expect(mockedList).toHaveBeenLastCalledWith(expect.objectContaining({ subject: '物理', page: 1 }))
+    expect(mockedList).toHaveBeenLastCalledWith(
+      expect.objectContaining({ subject: '物理', page: 1 }),
+    )
+  })
+
+  /** W-8（chandler 走查）：编辑/新增等路由离开再返回（组件重挂载）应保留当前分科 Tab。 */
+  it('W-8: 切到物理后离开列表再返回，仍停在物理 Tab 而非首个数学', async () => {
+    const pinia = createPinia() // 同一 store 跨挂载，模拟路由往返
+    const first = mount(QuestionListView, { global: { plugins: [ElementPlus, pinia, router] } })
+    await flushPromises()
+    await first
+      .findAll('.el-tabs__item')
+      .find((t) => t.text() === '物理')!
+      .trigger('click')
+    await flushPromises()
+    expect(mockedList).toHaveBeenLastCalledWith(expect.objectContaining({ subject: '物理' }))
+    first.unmount() // 路由离开列表页
+
+    mockedList.mockClear()
+    const second = mount(QuestionListView, { global: { plugins: [ElementPlus, pinia, router] } })
+    await flushPromises()
+    expect(mockedList).toHaveBeenLastCalledWith(
+      expect.objectContaining({ subject: '物理', page: 1 }),
+    )
+    // 高亮 Tab 同步为物理
+    const active = second.find('.el-tabs__item.is-active')
+    expect(active.text()).toBe('物理')
+    second.unmount()
   })
 })
 
@@ -131,7 +179,10 @@ describe('QuestionListView 待确认草稿入口', () => {
     await flushPromises()
     expect(mockedDrafts).toHaveBeenCalledTimes(1) // 徽标计数
 
-    await wrapper.findAll('button').find((b) => b.text().includes('待确认'))!.trigger('click')
+    await wrapper
+      .findAll('button')
+      .find((b) => b.text().includes('待确认'))!
+      .trigger('click')
     await flushPromises()
     expect(wrapper.text()).toContain('待确认草稿一')
     expect(mockedDrafts).toHaveBeenCalledTimes(2)
@@ -145,7 +196,10 @@ describe('QuestionListView 待确认草稿入口', () => {
     })
 
     // 草稿删除（确认框已 mock 为确认）
-    await wrapper.findAll('button').find((b) => b.text() === '删除')!.trigger('click')
+    await wrapper
+      .findAll('button')
+      .find((b) => b.text() === '删除')!
+      .trigger('click')
     await flushPromises()
     expect(deleteDraft).toHaveBeenCalledWith('d1')
     expect(mockedDrafts.mock.calls.length).toBeGreaterThanOrEqual(3)
@@ -166,7 +220,10 @@ describe('QuestionListView 删除二次确认', () => {
     await flushPromises()
     expect(deleteQuestion).not.toHaveBeenCalled()
 
-    await wrapper.findAll('button').find((b) => b.text() === '删除')!.trigger('click')
+    await wrapper
+      .findAll('button')
+      .find((b) => b.text() === '删除')!
+      .trigger('click')
     await flushPromises()
     expect(deleteQuestion).toHaveBeenCalledWith('q1')
     // 删除后刷新（初始 1 次 + 刷新 1 次）
@@ -180,7 +237,10 @@ describe('QuestionListView 详情抽屉', () => {
   it('点击查看请求详情并打开抽屉', async () => {
     const wrapper = mountView()
     await flushPromises()
-    await wrapper.findAll('button').find((b) => b.text() === '查看')!.trigger('click')
+    await wrapper
+      .findAll('button')
+      .find((b) => b.text() === '查看')!
+      .trigger('click')
     await flushPromises()
     expect(getQuestion).toHaveBeenCalledWith('q1')
     const drawer = wrapper.findComponent(QuestionDetailDrawer)
@@ -195,7 +255,10 @@ describe('QuestionListView 导出入口', () => {
   it('点击导出打开 ExportDialog', async () => {
     const wrapper = mountView()
     await flushPromises()
-    await wrapper.findAll('button').find((b) => b.text() === '导出')!.trigger('click')
+    await wrapper
+      .findAll('button')
+      .find((b) => b.text() === '导出')!
+      .trigger('click')
     await flushPromises()
     expect(wrapper.findComponent(ExportDialog).props('modelValue')).toBe(true)
     wrapper.unmount()
