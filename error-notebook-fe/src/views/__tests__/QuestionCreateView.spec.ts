@@ -80,7 +80,14 @@ beforeEach(async () => {
   })
   mockedParseImage.mockResolvedValue(['images/202611/x.jpg'])
   mockedParse.mockResolvedValue(makeDraft('d-new'))
-  mockedEmptyDraft.mockResolvedValue(makeDraft('d-empty', { questionStem: '', subject: '', questionImages: [], standardAnswer: [''] }))
+  mockedEmptyDraft.mockResolvedValue(
+    makeDraft('d-empty', {
+      questionStem: '',
+      subject: '',
+      questionImages: [],
+      standardAnswer: [''],
+    }),
+  )
   mockedConfirm.mockResolvedValue(makeDraft('d-new', { status: 'CONFIRMED' }))
   mockedUpdate.mockResolvedValue(makeDraft('q9', { status: 'CONFIRMED' }))
   mockedGet.mockResolvedValue(makeDraft('q9', { status: 'CONFIRMED' }))
@@ -101,7 +108,10 @@ async function uploadAndParse(wrapper: ReturnType<typeof mountView>): Promise<vo
   Object.defineProperty(input.element, 'files', { value: [pngFile()] })
   await input.trigger('change')
   await flushPromises()
-  await wrapper.findAll('button').find((b) => b.text().includes('开始解析'))!.trigger('click')
+  await wrapper
+    .findAll('button')
+    .find((b) => b.text().includes('开始解析'))!
+    .trigger('click')
   await flushPromises()
 }
 
@@ -136,13 +146,67 @@ describe('QuestionCreateView 三步流（TC-N-02）', () => {
     expect(mockedParse).toHaveBeenCalledTimes(1)
     expect(wrapper.text()).toContain('分项确认')
     // 题干预填在 textarea 的 DOM value（text() 不含表单值）
-    expect((wrapper.find('textarea').element as HTMLTextAreaElement).value).toContain('已知函数 f(x)，求 f(2)。')
+    expect((wrapper.find('textarea').element as HTMLTextAreaElement).value).toContain(
+      '已知函数 f(x)，求 f(2)。',
+    )
 
-    await wrapper.findAll('button').find((b) => b.text().includes('返回上一步'))!.trigger('click')
+    await wrapper
+      .findAll('button')
+      .find((b) => b.text().includes('返回上一步'))!
+      .trigger('click')
     await flushPromises()
     // 图片保留（缩略图仍在上传区）
     const uploader = wrapper.findComponent(ImageUploader)
     expect((uploader.props('modelValue') as unknown[]).length).toBe(1)
+    wrapper.unmount()
+  })
+})
+
+/** TC-N-07（FR-A7）：仅题目图（无解答图）直接解析——空答案/解析草稿可不经补全直接确认。 */
+describe('QuestionCreateView 仅题目图直接解析（TC-N-07）', () => {
+  it('单张 QUESTION 图解析按钮可用，请求仅含 QUESTION 角色；空答案草稿直接确认成功', async () => {
+    mockedParse.mockResolvedValueOnce(
+      makeDraft('d-q-only', {
+        questionImages: [{ url: 'images/202611/x.jpg', role: 'QUESTION' }],
+        standardAnswer: [],
+        knowledgeAnalysis: '',
+        subject: '物理',
+      }),
+    )
+    const wrapper = mountView()
+    await flushPromises()
+
+    // 上传单张题目图（默认角色 QUESTION）→ 解析按钮由禁用转为可用
+    const startBtn0 = wrapper.findAll('button').find((b) => b.text().includes('开始解析'))!
+    expect((startBtn0.element as HTMLButtonElement).disabled).toBe(true)
+    const input = wrapper.find('input[type="file"]')
+    Object.defineProperty(input.element, 'files', { value: [pngFile()] })
+    await input.trigger('change')
+    await flushPromises()
+    const startBtn = wrapper.findAll('button').find((b) => b.text().includes('开始解析'))!
+    expect((startBtn.element as HTMLButtonElement).disabled).toBe(false)
+    await startBtn.trigger('click')
+    await flushPromises()
+
+    // parse 请求只带 QUESTION 角色，不要求 ANSWER_SHEET
+    expect(mockedParse).toHaveBeenCalledWith([{ url: 'images/202611/x.jpg', role: 'QUESTION' }])
+    expect(wrapper.text()).toContain('分项确认')
+
+    // 答案/解析为空不阻塞：题干已预填（科目来自草稿）→ 直接确认录入
+    expect((wrapper.find('textarea').element as HTMLTextAreaElement).value).toContain('已知函数')
+    await wrapper
+      .findAll('button')
+      .find((b) => b.text().includes('确认录入'))!
+      .trigger('click')
+    await flushPromises()
+    expect(mockedConfirm).toHaveBeenCalledTimes(1)
+    const payload = mockedConfirm.mock.calls[0][1] as {
+      standardAnswer: string[]
+      knowledgeAnalysis: string
+    }
+    expect(payload.standardAnswer).toEqual([]) // 空答案行被过滤，原样为空
+    expect(payload.knowledgeAnalysis).toBe('')
+    expect(wrapper.text()).toContain('录入成功')
     wrapper.unmount()
   })
 })
@@ -169,7 +233,10 @@ describe('QuestionCreateView 分项确认（TC-N-03）', () => {
     await flushPromises()
     expect(mockedKp).toHaveBeenCalledWith('函', expect.anything())
     // 候选渲染并点选复用（BR-03 归并；按钮文本含使用次数「函数（3 次）」）
-    await wrapper.findAll('.kp-candidate').find((b) => b.text().includes('函数'))!.trigger('click')
+    await wrapper
+      .findAll('.kp-candidate')
+      .find((b) => b.text().includes('函数'))!
+      .trigger('click')
     await flushPromises()
 
     // 自由输入回车添加
@@ -188,7 +255,10 @@ describe('QuestionCreateView 分项确认（TC-N-03）', () => {
     // 知识点 × 删除（删除“新知识点”）
     const kpTags = wrapper.findAll('.kp-item')
     expect(kpTags.length).toBeGreaterThanOrEqual(2)
-    await kpTags.find((t) => t.text().includes('新知识点'))!.find('.kp-remove').trigger('click')
+    await kpTags
+      .find((t) => t.text().includes('新知识点'))!
+      .find('.kp-remove')
+      .trigger('click')
     await flushPromises()
     expect(wrapper.text()).not.toContain('新知识点')
     wrapper.unmount()
@@ -204,12 +274,18 @@ describe('QuestionCreateView 确认必填（TC-N-04）', () => {
 
     const stemInput = wrapper.find('textarea')
     await stemInput.setValue('')
-    await wrapper.findAll('button').find((b) => b.text().includes('确认录入'))!.trigger('click')
+    await wrapper
+      .findAll('button')
+      .find((b) => b.text().includes('确认录入'))!
+      .trigger('click')
     await flushPromises()
     expect(mockedConfirm).not.toHaveBeenCalled()
 
     await stemInput.setValue('补齐的题干')
-    await wrapper.findAll('button').find((b) => b.text().includes('确认录入'))!.trigger('click')
+    await wrapper
+      .findAll('button')
+      .find((b) => b.text().includes('确认录入'))!
+      .trigger('click')
     await flushPromises()
     expect(mockedConfirm).toHaveBeenCalledTimes(1)
     expect(wrapper.text()).toContain('录入成功')
@@ -230,18 +306,30 @@ describe('QuestionCreateView 解析状态（TC-P-06）', () => {
     expect(wrapper.text()).toContain('转手动填写')
 
     // 重试成功 → 确认步
-    await wrapper.findAll('button').find((b) => b.text() === '重试')!.trigger('click')
+    await wrapper
+      .findAll('button')
+      .find((b) => b.text() === '重试')!
+      .trigger('click')
     await flushPromises()
     expect(mockedParse).toHaveBeenCalledTimes(2)
     expect(wrapper.text()).toContain('分项确认')
 
     // 回到失败路径再走转手动
     mockedParse.mockRejectedValueOnce(new Error('AI 解析失败（42001）'))
-    await wrapper.findAll('button').find((b) => b.text().includes('返回上一步'))!.trigger('click')
+    await wrapper
+      .findAll('button')
+      .find((b) => b.text().includes('返回上一步'))!
+      .trigger('click')
     await flushPromises()
-    await wrapper.findAll('button').find((b) => b.text().includes('开始解析'))!.trigger('click')
+    await wrapper
+      .findAll('button')
+      .find((b) => b.text().includes('开始解析'))!
+      .trigger('click')
     await flushPromises()
-    await wrapper.findAll('button').find((b) => b.text() === '转手动填写')!.trigger('click')
+    await wrapper
+      .findAll('button')
+      .find((b) => b.text() === '转手动填写')!
+      .trigger('click')
     await flushPromises()
     expect(mockedEmptyDraft).toHaveBeenCalledTimes(1)
     // 转手动：POST drafts 一次；解析调用保持 3 次（首次+重试+换图再解析，转手动不增加 AI 调用）
@@ -260,20 +348,31 @@ describe('QuestionCreateView 编辑重解析删旧（TC-N-06）', () => {
     await flushPromises()
     expect(mockedGet).toHaveBeenCalledWith('q9')
     // 直达步骤3 且预填（textarea DOM value）
-    expect((wrapper.find('textarea').element as HTMLTextAreaElement).value).toContain('已知函数 f(x)，求 f(2)。')
+    expect((wrapper.find('textarea').element as HTMLTextAreaElement).value).toContain(
+      '已知函数 f(x)，求 f(2)。',
+    )
     expect(wrapper.text()).toContain('重新解析')
 
     // 重新解析 → 回步骤1（换图）；按钮文本为「重新解析（换图）」
-    await wrapper.findAll('button').find((b) => b.text().includes('重新解析'))!.trigger('click')
+    await wrapper
+      .findAll('button')
+      .find((b) => b.text().includes('重新解析'))!
+      .trigger('click')
     await flushPromises()
     expect(wrapper.find('input[type="file"]').exists()).toBe(true)
 
     // 换图重新走解析流（新草稿 d-new）
     await uploadAndParse(wrapper)
     // 直接编辑模式确认（非重解析路径）应走 PUT；重解析路径 confirm 新 + 删旧
-    await wrapper.findAll('button').find((b) => b.text().includes('确认录入'))!.trigger('click')
+    await wrapper
+      .findAll('button')
+      .find((b) => b.text().includes('确认录入'))!
+      .trigger('click')
     await flushPromises()
-    expect(mockedConfirm).toHaveBeenCalledWith('d-new', expect.objectContaining({ questionStem: '已知函数 f(x)，求 f(2)。' }))
+    expect(mockedConfirm).toHaveBeenCalledWith(
+      'd-new',
+      expect.objectContaining({ questionStem: '已知函数 f(x)，求 f(2)。' }),
+    )
     expect(deleteQuestion).toHaveBeenCalledWith('q9')
     expect(wrapper.text()).toContain('录入成功')
     wrapper.unmount()
@@ -284,7 +383,10 @@ describe('QuestionCreateView 编辑重解析删旧（TC-N-06）', () => {
     await router.isReady()
     const wrapper = mountView()
     await flushPromises()
-    await wrapper.findAll('button').find((b) => b.text().includes('确认录入'))!.trigger('click')
+    await wrapper
+      .findAll('button')
+      .find((b) => b.text().includes('确认录入'))!
+      .trigger('click')
     await flushPromises()
     expect(mockedUpdate).toHaveBeenCalledWith('q9', expect.anything())
     expect(mockedConfirm).not.toHaveBeenCalled()
