@@ -51,7 +51,11 @@ class OpenAiVisionAdapterTest {
     props.setTopP(0.95);
     ChatRequestFactory factory =
         new ChatRequestFactory(
-            props.getModel(), props.getTemperature(), props.getTopP(), "SYSTEM_PROMPT");
+            props.getModel(),
+            props.getTemperature(),
+            props.getTopP(),
+            "SYSTEM_PROMPT",
+            props.getThinkingType());
     adapter = new OpenAiVisionAdapter(modelClient, factory, imageFetchService, props);
   }
 

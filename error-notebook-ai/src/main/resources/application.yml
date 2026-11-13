@@ -19,6 +19,9 @@ app:
     # 结构化质量由「仅输出严格 JSON」Prompt + few-shot + 防腐层 JSON 校验（失败重试 1 次）保证
     temperature: 1
     top-p: 0.95
+    # 思考模式（W-7，2026-11-13 chandler 确认默认 disabled）：错题结构化提取实测 禁用 5.6s 出完整草稿、
+    # 默认深思考 168s 超一切超时阶梯（W-5）；如切 enabled 须同步评估阶梯
+    thinking-type: disabled
     # BE 静态图片访问（架构 §2.1 链路④：回环拉取处理图，A-2 固化）
     be-base-url: ${ERRNOTE_AI_BE_BASE_URL:http://127.0.0.1:8080}
     # Prompt 模板外置（A-4；api-contract §7.1 草稿字段 + architecture-data §3 枚举；{subjects} 运行时替换）

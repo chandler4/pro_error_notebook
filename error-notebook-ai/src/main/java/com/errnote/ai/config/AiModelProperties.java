@@ -24,6 +24,12 @@ public class AiModelProperties {
 
   private Double topP = 0.95;
 
+  /**
+   * 思考模式（W-7，2026-11-13 chandler 确认）：默认 disabled——错题结构化提取实测禁用思考 5.6s 出完整草稿、默认深思考 168s 超一切超时阶梯；置
+   * enabled 需同步评估 W-5 阶梯（AI 90s 读超时装不下深思考）。
+   */
+  private String thinkingType = "disabled";
+
   private Integer connectTimeoutMs = 5000;
 
   private Integer readTimeoutMs = 90000;

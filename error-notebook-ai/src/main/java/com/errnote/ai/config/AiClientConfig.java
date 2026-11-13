@@ -16,6 +16,7 @@ public class AiClientConfig {
         properties.getModel(),
         properties.getTemperature(),
         properties.getTopP(),
-        promptProvider.systemPrompt());
+        promptProvider.systemPrompt(),
+        properties.getThinkingType());
   }
 }

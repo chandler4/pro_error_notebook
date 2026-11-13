@@ -26,12 +26,15 @@ public class ChatRequestFactory {
   private final Double temperature;
   private final Double topP;
   private final String systemPrompt;
+  private final String thinkingType;
 
-  public ChatRequestFactory(String model, Double temperature, Double topP, String systemPrompt) {
+  public ChatRequestFactory(
+      String model, Double temperature, Double topP, String systemPrompt, String thinkingType) {
     this.model = model;
     this.temperature = temperature;
     this.topP = topP;
     this.systemPrompt = systemPrompt;
+    this.thinkingType = thinkingType;
   }
 
   /** @param urlToDataUrl 图片相对路径到 data URL 的转换（ImageFetchService 提供，测试可替换） */
@@ -54,6 +57,10 @@ public class ChatRequestFactory {
         .model(model)
         .temperature(temperature)
         .topP(topP)
+        .thinking(
+            thinkingType == null || thinkingType.isEmpty()
+                ? null
+                : ChatCompletionRequest.Thinking.builder().type(thinkingType).build())
         .messages(
             java.util.Arrays.asList(
                 Message.builder()

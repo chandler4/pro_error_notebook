@@ -24,6 +24,7 @@
 | v3.1 | 2026-11-12 | review 补缺（chandler 确认）：§5.1 补失败兜底与编辑重解析分支——转手动填写经 `POST /api/v1/questions/drafts` 创建空草稿（零 AI 调用，TC-P-07）；编辑模式重新解析 confirm 成功后前端联动删旧记录 | chandler / AI 助手 |
 | v3.2 | 2026-11-12 | **模型选型落档（chandler 确认）**：智谱 GLM Coding Plan · **glm-5.3-flash**（原生多模态图片输入，套餐内额度 3 倍）；端点用套餐 OpenAI 兼容 `https://open.bigmodel.cn/api/coding/paas/v4`；采样参数按官方推荐 temperature 1 / top_p 0.95（思考型模型，取代原低 temperature 设计，结构化质量由 Prompt+few-shot+防腐层校验保证）；技术栈表/架构图/§5.2 同步 | chandler / AI 助手 |
 | v3.3 | 2026-11-13 | **超时阶梯化（T9-1 走查 W-5，chandler 确认）**：③ BE→AI Feign 读超时 90s→**100s**，与 ⑤ AI 模型读超时 90s 解除同值竞速（长耗时真调时 AI 错误信封先到、明细不丢）；阶梯 `AI 90s < BE 100s < FE 120s`；§2.1 架构图/明细表/时序图同步 | chandler / AI 助手 |
+| v3.4 | 2026-11-13 | **思考模式默认禁用（T9-1 走查 W-7，chandler 确认）**：AI 请求体下发 `thinking:{type:"disabled"}`（`app.ai.thinking-type` 可配，空值省略字段走端点默认）——实测完整 Prompt+真实照片默认深思考 **168.3s** 超一切超时阶梯（走查持续超时/断连的根因），禁用 **5.6s** 且草稿质量不降（standardAnswer 反而解出）；§5.2 同步 | chandler / AI 助手 |
 
 ---
 
@@ -282,7 +283,7 @@ sequenceDiagram
 - **error-notebook-ai 独立 Java 服务**（Spring Boot 2.7，127.0.0.1:8081，同栈）：承载模型调用、Prompt、防腐层全部职责；无数据库、无状态。
 - **BE↔AI 内部契约**（[api-contract.md](api-contract.md) 第 7 章）：`POST /internal/parse` 业务语义接口——入参 `images:[{url,role}]`，出参 `{draft, rawModelResponse, model, durationMs}`；错误路径 HTTP 恒 200、信封 `data` 恒为 `{"model": 配置模型名}`（v1.7/W-4，2026-11-13：供 BE 失败条目 business_log 留痕）；仅回环监听、无鉴权。
 - **BE 侧**：`AiServiceClient`（Feign）调用内部契约；`ParseService` 编排：调用 → 草稿入库（PENDING_CONFIRM）→ `recordAi` 落业务日志（**raw 全文随响应回传，business_log 仍聚合在 BE 的 H2**）。
-- **AI 服务内部**：`OpenAiModelClient`（Feign·OpenAI 兼容，连接 5s/读取 90s）→ `OpenAiVisionAdapter` 防腐层（DTO 转换、严格 JSON 校验、失败重试 1 次、**网络异常亦独立重试 1 次（W-6，2026-11-13：外部接口对长思考非流式响应间歇性断连，curl 复现同请求时成时断）**、异常映射 42001/42002、raw 原文透出）→ Prompt（仅输出严格 JSON + few-shot + **官方推荐采样参数 temperature 1 / top_p 0.95**——思考型模型，2026-11-12 确认取代原低 temperature 设计；图片按角色排序：题目图在前）。
+- **AI 服务内部**：`OpenAiModelClient`（Feign·OpenAI 兼容，连接 5s/读取 90s）→ `OpenAiVisionAdapter` 防腐层（DTO 转换、严格 JSON 校验、失败重试 1 次、**网络异常亦独立重试 1 次（W-6，2026-11-13：外部接口对长思考非流式响应间歇性断连，curl 复现同请求时成时断）**、异常映射 42001/42002、raw 原文透出）→ Prompt（仅输出严格 JSON + few-shot + **官方推荐采样参数 temperature 1 / top_p 0.95**——思考型模型，2026-11-12 确认取代原低 temperature 设计；**思考模式默认 disabled**（W-7，2026-11-13：请求体 `thinking:{type}`，`app.ai.thinking-type` 可配、空值省略字段走端点默认——实测完整 Prompt+真实照片默认深思考 168.3s 超一切超时阶梯，禁用 5.6s 且草稿质量不降；切 enabled 须同步评估 W-5 阶梯）；图片按角色排序：题目图在前）。
 - 前端 fetch 超时 120s 链路不变；AI 调用仍仅存在于解析用例（BR-01）。
 - 预留：AI 服务可平滑替换为 Python 实现（内部契约不变，BE 零改动）。
 

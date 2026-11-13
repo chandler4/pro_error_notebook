@@ -44,6 +44,7 @@
 | W-4 | 低 | AI_CALL 失败条目 `action="AI解析 model="` 型号名为空 | **已修复**：内部契约 v1.7 错误信封 `data={"model"}`，BE 失败留痕携带（BE 传输层失败无从获知仍留空）；AI 26 测试 / BE 101 测试全绿，修复后真机复验 ✓（见 §1 第 12/13 项与 §5 复验记录） |
 | W-5 | 中 | **chandler 浏览器走查发现（10:17）**：真实照片解析超 90s，BE Feign 读超时（90s）与 AI 模型读超时（90s）**同值竞速**——AI 的 42002 信封未及到达 BE 已判传输失败，明细丢失（log id=70：90015ms/默认文案/model 空）；外部智谱接口本身健康（直连 `/internal/parse` 真调正常返回） | **已修复（阶梯化，chandler 确认）**：`AI 90s < BE Feign 100s < FE 120s`（application.yml + FeignTimeoutLadderTest 阶梯断言）；架构 v3.3 同步（§2.1 图/明细表/时序图）；修复后全链路真调复验 ✓（见 §5） |
 | W-6 | 中 | **chandler 走查重试反馈（10:36）+ curl 外部接口实测**：外部智谱接口对「长思考+非流式」响应**间歇性断连/超时**——文本 ping ✓ 秒回；同一真实照片视觉调用第 1 次 ✓（物理电路题完整转写）、第 2 次 ✗ 25.7s 断连（HTTP 000）；无代理劫持、TLS 1.0s 正常 → 配置正确、外呼链路时稳时断（AI 日志两见 RetryableException） | **已修复（网络级重试 1 次，chandler 确认）**：`OpenAiVisionAdapter.callModel` 网络异常先重发 1 次再判 42002（与 JSON 非法重试独立，最坏物理调用 ≤4；快断连类故障重试落在 W-5 阶梯内）；AI 27 测试全绿（重试自愈用例 + 计数断言）；架构 §5.2 重试语义同步；修复后真实照片全链路复验 ✓（见 §5） |
+| W-7 | 高 | **chandler 走查持续失败根因（W-5/W-6 之后仍现）**：模型端「默认深思考」——完整 Prompt+真实照片 curl 对照实测：默认思考 **168.3s**（超一切超时阶梯，走查超时/断连多为此等待期被掐断的表现）、`thinking:{type:"disabled"}` 仅 **5.6s** 且草稿质量不降（standardAnswer 反而解出） | **已修复（默认禁用思考，chandler 确认）**：请求体下发 `thinking:{type:"disabled"}`（`app.ai.thinking-type` 可配，空值省略字段走端点默认；切 enabled 须同步评估 W-5 阶梯）；AI 29 测试全绿（组装用例 + DTO 线格式用例）；架构 §5.2/v3.4 同步；修复后真实照片全链路复验 ✓ **10.8s** 成功（AI_CALL id=113 model=glm-5.3-flash，standardAnswer 非空）（见 §5） |
 | 观察 | 低 | 真调下 AI 草稿 `standardAnswer`/`knowledgeAnalysis` 常为空（答案纸学生解答未映射到标准答案；解析未生成）——分项确认本就允许人工补全 | **v1 接受不调 Prompt**，留档后续迭代项 |
 
 ## 3. 浏览器侧走查项（待 chandler 确认，三服务已保持运行）
@@ -65,3 +66,4 @@
 - 重启 AI+BE 新代码后，重放坏图 URL 解析（40000 路径）→ `GET /api/v1/logs?logType=AI_CALL&success=false` 失败条目 `action="AI解析 model=glm-5.3-flash"` ✓（复验细节以 communication-log 当日记录为准）
 - **W-5 修复后全链路复验**：重启 BE（新 read-timeout 100s）后经 8080 全链路真实解析 ✓（细节见 communication-log 当日记录）
 - **W-6 修复后真实照片复验**：重启 AI（网络级重试版）后用 chandler 真实物理照片经 8080 全链路解析 ✓（细节见 communication-log 当日记录）
+- **W-7 修复后真实照片复验（11:11）**：重启 AI（思考禁用版）后同一张真实物理照片经 8080 全链路 **10.8s** 解析成功（默认思考 168.3s 必超时）——physics/grade9/fillBlank 草稿 standardAnswer 非空，AI_CALL id=113 success=true durationMs=10603 model=glm-5.3-flash；临时草稿已硬删清理（细节见 communication-log 当日记录）

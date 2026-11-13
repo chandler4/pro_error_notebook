@@ -56,6 +56,38 @@ class OpenAiDtoWireFormatTest {
   }
 
   @Test
+  @DisplayName("W-7: thinking 以 {type} 形式序列化，未设置时整个字段省略")
+  void thinkingSerializesAsTypeObjectAndOmitsWhenNull() throws Exception {
+    ChatCompletionRequest withThinking =
+        ChatCompletionRequest.builder()
+            .model("glm-5.3-flash")
+            .thinking(ChatCompletionRequest.Thinking.builder().type("disabled").build())
+            .messages(
+                Collections.singletonList(
+                    ChatCompletionRequest.Message.builder()
+                        .role("user")
+                        .content(
+                            Arrays.asList(
+                                ChatCompletionRequest.ContentPart.builder()
+                                    .type("text")
+                                    .text("q")
+                                    .build()))
+                        .build()))
+            .build();
+    JsonNode with = mapper.readTree(mapper.writeValueAsString(withThinking));
+    assertThat(with.path("thinking").path("type").asText()).isEqualTo("disabled");
+    assertThat(with.has("thinkingType")).isFalse();
+
+    ChatCompletionRequest withoutThinking =
+        ChatCompletionRequest.builder()
+            .model("glm-5.3-flash")
+            .messages(withThinking.getMessages())
+            .build();
+    JsonNode without = mapper.readTree(mapper.writeValueAsString(withoutThinking));
+    assertThat(without.has("thinking")).isFalse();
+  }
+
+  @Test
   @DisplayName("响应反序列化读取 choices[0].message.content")
   void responseDeserializesFirstChoiceContent() throws Exception {
     String body =
