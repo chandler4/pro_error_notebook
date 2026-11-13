@@ -23,6 +23,7 @@
 | v3.0 | 2026-11-11 | **架构变更（chandler tasks 指令，17:24 确认）**：AI 层拆分为独立 Java 服务 `error-notebook-ai`（Spring Boot 2.7，127.0.0.1:8081）——单体→**双服务**；BE↔AI 走**业务语义内部契约**（api-contract 第 7 章）；防腐层/Prompt/模型调用移入 AI 服务，raw 随响应回传 BE 落业务日志；工程结构改三工程；新增 [tasks.md](tasks.md)（SDD 任务分解，27 任务骨架优先） | chandler / AI 助手 |
 | v3.1 | 2026-11-12 | review 补缺（chandler 确认）：§5.1 补失败兜底与编辑重解析分支——转手动填写经 `POST /api/v1/questions/drafts` 创建空草稿（零 AI 调用，TC-P-07）；编辑模式重新解析 confirm 成功后前端联动删旧记录 | chandler / AI 助手 |
 | v3.2 | 2026-11-12 | **模型选型落档（chandler 确认）**：智谱 GLM Coding Plan · **glm-5.3-flash**（原生多模态图片输入，套餐内额度 3 倍）；端点用套餐 OpenAI 兼容 `https://open.bigmodel.cn/api/coding/paas/v4`；采样参数按官方推荐 temperature 1 / top_p 0.95（思考型模型，取代原低 temperature 设计，结构化质量由 Prompt+few-shot+防腐层校验保证）；技术栈表/架构图/§5.2 同步 | chandler / AI 助手 |
+| v3.3 | 2026-11-13 | **超时阶梯化（T9-1 走查 W-5，chandler 确认）**：③ BE→AI Feign 读超时 90s→**100s**，与 ⑤ AI 模型读超时 90s 解除同值竞速（长耗时真调时 AI 错误信封先到、明细不丢）；阶梯 `AI 90s < BE 100s < FE 120s`；§2.1 架构图/明细表/时序图同步 | chandler / AI 助手 |
 
 ---
 
@@ -103,7 +104,7 @@ graph LR
     U -->|"① 页面路由"| F1
     F1 -->|"② 业务调用 HTTP/JSON（fetch，解析链路超时 120s）"| B1
     F1 -.->|"②′ 静态资源（生产）"| B2
-    B1 -->|"③ 解析编排 OpenFeign（回环·无鉴权·读超时 90s）"| A1
+    B1 -->|"③ 解析编排 OpenFeign（回环·无鉴权·读超时 100s，W-5 阶梯化）"| A1
     A1 -->|"④ 拉取图片（回环）GET /files/images/**"| B2
     A1 -->|"⑤ 模型调用（出站 HTTPS·读超时 90s）"| LLM
     B1 -->|"⑥ 统一响应 {code,message,data}"| F1
@@ -116,7 +117,7 @@ graph LR
 | ① | 浏览器 → FE | — | 页面路由 `/questions` 等 | 开发期 Vite devServer 5173（代理→8080）；生产前端产物由 BE 托管 |
 | ② | FE → BE | HTTP/JSON `127.0.0.1:8080` | `/api/v1/**`（契约第 3 章） | 原生 fetch + request 封装；解析链路超时 120s，其余 30s；统一业务码拦截 |
 | ②′ | 浏览器/FE → BE（生产） | HTTP | `/`（SPA）、`/files/images/**` | 前端构建产物静态托管；错题图片经 BE 静态映射访问 |
-| ③ | BE → AI 服务 | HTTP/JSON `127.0.0.1:8081` | `POST /internal/parse`（契约第 7 章） | OpenFeign 声明式；**仅录入解析链路调用**（BR-01）；回环无鉴权；连接 5s/读取 90s |
+| ③ | BE → AI 服务 | HTTP/JSON `127.0.0.1:8081` | `POST /internal/parse`（契约第 7 章） | OpenFeign 声明式；**仅录入解析链路调用**（BR-01）；回环无鉴权；连接 5s/读取 100s（W-5 阶梯化：AI 90s < BE 100s < FE 120s，信封永远先到） |
 | ④ | AI 服务 → BE | HTTP（回环） | `GET /files/images/**` | 按图片 URL 拉取裁剪后处理图作为模型输入（实现于任务 A-2） |
 | ⑤ | AI 服务 → 大模型 | HTTPS（出站，系统唯一外联） | OpenAI 兼容 `chat/completions`（多模态） | OpenFeign；连接 5s/读取 90s；api-key 仅环境变量 |
 | ⑥ | BE → FE | HTTP | `{code, message, data}` | HTTP 恒 200，业务结果由 code 表达（契约第 1 章） |
@@ -261,7 +262,7 @@ sequenceDiagram
     F->>B: ② POST /api/v1/questions/parse-image（处理图）
     B-->>F: imageUrl 列表
     F->>B: ② POST /api/v1/questions/parse（同步等待，fetch 超时 120s）
-    B->>S: ③ POST /internal/parse（OpenFeign 回环，读超时 90s）
+    B->>S: ③ POST /internal/parse（OpenFeign 回环，读超时 100s·W-5 阶梯化）
     S->>B: ④ GET /files/images/**（拉取图片）
     S->>A: ⑤ chat/completions 多模态（连接 5s/读取 90s）
     A-->>S: 模型原始响应

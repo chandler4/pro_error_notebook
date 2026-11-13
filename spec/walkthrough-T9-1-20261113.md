@@ -42,6 +42,7 @@
 | W-2 | — | （昨日）取图失败未映射 40000+url 明细 | 已修复（b8ccd10），本次回归 ✓ |
 | W-3 | 中 | `/demo` T0-2 演示页「调用解析」按钮指向 `/api/v1/demo/parse`，BE DemoController 已随 B-4 删除 → 死链 404（enums 按钮仍可用） | **T9-3 打包前移除演示页路由+页面**（已补入 tasks.md T9-3） |
 | W-4 | 低 | AI_CALL 失败条目 `action="AI解析 model="` 型号名为空 | **已修复**：内部契约 v1.7 错误信封 `data={"model"}`，BE 失败留痕携带（BE 传输层失败无从获知仍留空）；AI 26 测试 / BE 101 测试全绿，修复后真机复验 ✓（见 §1 第 12/13 项与 §5 复验记录） |
+| W-5 | 中 | **chandler 浏览器走查发现（10:17）**：真实照片解析超 90s，BE Feign 读超时（90s）与 AI 模型读超时（90s）**同值竞速**——AI 的 42002 信封未及到达 BE 已判传输失败，明细丢失（log id=70：90015ms/默认文案/model 空）；外部智谱接口本身健康（直连 `/internal/parse` 真调正常返回） | **已修复（阶梯化，chandler 确认）**：`AI 90s < BE Feign 100s < FE 120s`（application.yml + FeignTimeoutLadderTest 阶梯断言）；架构 v3.3 同步（§2.1 图/明细表/时序图）；修复后全链路真调复验 ✓（见 §5） |
 | 观察 | 低 | 真调下 AI 草稿 `standardAnswer`/`knowledgeAnalysis` 常为空（答案纸学生解答未映射到标准答案；解析未生成）——分项确认本就允许人工补全 | **v1 接受不调 Prompt**，留档后续迭代项 |
 
 ## 3. 浏览器侧走查项（待 chandler 确认，三服务已保持运行）
@@ -61,3 +62,4 @@
 ## 5. W-4 修复后真机复验（2026-11-13，修复提交后）
 
 - 重启 AI+BE 新代码后，重放坏图 URL 解析（40000 路径）→ `GET /api/v1/logs?logType=AI_CALL&success=false` 失败条目 `action="AI解析 model=glm-5.3-flash"` ✓（复验细节以 communication-log 当日记录为准）
+- **W-5 修复后全链路复验**：重启 BE（新 read-timeout 100s）后经 8080 全链路真实解析 ✓（细节见 communication-log 当日记录）
