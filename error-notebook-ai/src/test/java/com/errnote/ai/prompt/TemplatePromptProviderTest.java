@@ -48,7 +48,10 @@ class TemplatePromptProviderTest {
         .contains("knowledgePoints")
         .contains("knowledgeAnalysis")
         .contains("tags") // BR-11：标签人工标注，模型不得生成
-        .contains("仅输出严格 JSON");
+        .contains("仅输出严格 JSON")
+        // 2026-11-13 chandler 确认（推翻当日晨间「维持提取定位」）：图中优先、无则 AI 解题生成
+        .contains("自行解题")
+        .contains("不得留空");
   }
 
   @Test
