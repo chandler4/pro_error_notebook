@@ -282,7 +282,7 @@ sequenceDiagram
 - **error-notebook-ai 独立 Java 服务**（Spring Boot 2.7，127.0.0.1:8081，同栈）：承载模型调用、Prompt、防腐层全部职责；无数据库、无状态。
 - **BE↔AI 内部契约**（[api-contract.md](api-contract.md) 第 7 章）：`POST /internal/parse` 业务语义接口——入参 `images:[{url,role}]`，出参 `{draft, rawModelResponse, model, durationMs}`；错误路径 HTTP 恒 200、信封 `data` 恒为 `{"model": 配置模型名}`（v1.7/W-4，2026-11-13：供 BE 失败条目 business_log 留痕）；仅回环监听、无鉴权。
 - **BE 侧**：`AiServiceClient`（Feign）调用内部契约；`ParseService` 编排：调用 → 草稿入库（PENDING_CONFIRM）→ `recordAi` 落业务日志（**raw 全文随响应回传，business_log 仍聚合在 BE 的 H2**）。
-- **AI 服务内部**：`OpenAiModelClient`（Feign·OpenAI 兼容，连接 5s/读取 90s）→ `OpenAiVisionAdapter` 防腐层（DTO 转换、严格 JSON 校验、失败重试 1 次、异常映射 42001/42002、raw 原文透出）→ Prompt（仅输出严格 JSON + few-shot + **官方推荐采样参数 temperature 1 / top_p 0.95**——思考型模型，2026-11-12 确认取代原低 temperature 设计；图片按角色排序：题目图在前）。
+- **AI 服务内部**：`OpenAiModelClient`（Feign·OpenAI 兼容，连接 5s/读取 90s）→ `OpenAiVisionAdapter` 防腐层（DTO 转换、严格 JSON 校验、失败重试 1 次、**网络异常亦独立重试 1 次（W-6，2026-11-13：外部接口对长思考非流式响应间歇性断连，curl 复现同请求时成时断）**、异常映射 42001/42002、raw 原文透出）→ Prompt（仅输出严格 JSON + few-shot + **官方推荐采样参数 temperature 1 / top_p 0.95**——思考型模型，2026-11-12 确认取代原低 temperature 设计；图片按角色排序：题目图在前）。
 - 前端 fetch 超时 120s 链路不变；AI 调用仍仅存在于解析用例（BR-01）。
 - 预留：AI 服务可平滑替换为 Python 实现（内部契约不变，BE 零改动）。
 

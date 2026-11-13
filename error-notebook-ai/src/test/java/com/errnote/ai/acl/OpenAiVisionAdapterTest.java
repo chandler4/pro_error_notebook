@@ -120,8 +120,8 @@ class OpenAiVisionAdapterTest {
   }
 
   @Test
-  @DisplayName("TC-P-03: 网络/超时异常 → 42002，message 为统一文案不泄漏底层细节")
-  void networkErrorMapsTo42002WithoutLeakingDetails() {
+  @DisplayName("TC-P-03 + W-6: 网络/超时异常重试 1 次仍失败 → 42002，message 统一文案不泄漏底层细节，调用计数 = 2")
+  void networkErrorRetriesOnceThenMapsTo42002() {
     RuntimeException timeout =
         new RuntimeException(new SocketTimeoutException("Read timed out after 90000ms"));
     when(modelClient.chat(any())).thenThrow(timeout);
@@ -136,7 +136,20 @@ class OpenAiVisionAdapterTest {
               assertThat(e.getMessage()).doesNotContain("timed out");
             });
 
-    verify(modelClient, times(1)).chat(any());
+    verify(modelClient, times(2)).chat(any());
+  }
+
+  @Test
+  @DisplayName("W-6: 首调断连/超时、重试成功 → 返回草稿（外部接口间歇性故障自愈，调用计数 = 2）")
+  void networkErrorRetriedOnceSucceeds() {
+    RuntimeException drop = new RuntimeException(new SocketTimeoutException("Connection reset"));
+    when(modelClient.chat(any())).thenThrow(drop).thenReturn(responseWithContent(VALID_DRAFT_JSON));
+
+    ParseResponse resp = adapter.parse(images());
+
+    assertThat(resp.getDraft().getSubject()).isEqualTo("physics");
+    assertThat(resp.getRawModelResponse()).isEqualTo(VALID_DRAFT_JSON);
+    verify(modelClient, times(2)).chat(any());
   }
 
   private List<com.errnote.ai.dto.ParseRequest.ImageRef> images() {
